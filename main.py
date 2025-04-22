@@ -25,11 +25,10 @@ class Item(ABC):
         self._id = str()
 
 
-
 class Movie(Item):
     def __init__(self):
         self._id = str()
-        
+
 class Book(Item):
     def __init__(self):
         self._id = str()
