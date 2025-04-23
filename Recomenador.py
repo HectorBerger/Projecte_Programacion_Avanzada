@@ -1,16 +1,16 @@
-from typing import List
-from Items import Item, Book, Movie
-from User import User
-import csv
+from dataset import Dataset
 import numpy as np
 
 class Recomenador:
-    _items: List[Item]
+    _dataset: Dataset
 
-    def __init__(self):
-        self._items = []
+    def __init__(self, dataset) -> True:
+       self._dataset = dataset
+       return True
         
     def recomanacio_simple(self, user, item):
+        min_vots = 0
+        minim = 0
         if min_vots < minim:
             return 0
 
@@ -23,7 +23,7 @@ class Recomenador:
         return score
 
     def recomanacio_colaboratiu(self, user, item):
-
+        pass
     def get_num_vots(self):
         # Implementar la lógica para obtener el número de votos
         pass
@@ -37,12 +37,3 @@ class Recomenador:
         pass
 
     
-
-    
-
-    def carrega(self):
-        NOMFITXER = "datasets/books/Books.csv"
-        with open(NOMFITXER) as csvfile:
-            bookreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-            for row in bookreader:
-                print(', '.join(row))
