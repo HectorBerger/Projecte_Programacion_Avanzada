@@ -17,8 +17,8 @@ class Dataset:
         self.carrega()
     
 
-    def carrega_items(self,nom_fitxer,):
-        if self.dataset_name == 1:
+    def carrega_items(self,nom_fitxer):
+        if self.dataset_name == 1: #!#!#! He pensado que podemos hacer que sea una clase abstracta y que haya un dataset hijo por cada tipo, así nos ahorramos estos ifs raros
             with open(nom_fitxer) as csvfile:   
                 bookreader = csv.reader(csvfile, delimiter=',')
                 for row in bookreader[1:]:
@@ -44,16 +44,20 @@ class Dataset:
                     self._pos_items[titol] = ISBN
             
 
-                
-
-    def carrega_items(self,nom_fitxer):
-        pass
-    
     def carrega_users(self,nom_fitxer):
         pass
     
+
     def carrega_ratings(self,nom_fitxer):
-        if 
+        if self.dataset_name == 1:
+            with open
         #Recorrer para saber n i m
-        np.empty([number_of_users,number_of_items], dtype=np.int8) np.float16 en el caso de movies
+            number_of_users = 
+            number_of_items = 
+            np.empty([number_of_users,number_of_items], dtype=np.float16)
+
+        elif self.dataset_name == 2:
+            number_of_users = 
+            number_of_items = 
+            np.empty([number_of_users,number_of_items], dtype=np.int8) 
 
