@@ -22,14 +22,17 @@ class Dataset(ABC):
     _pos_items: Dict[str, int] #IdItem : columna
     _ratings: np.array 
 
+    _all_users: set
+
     def __init__(self):
         self._users = dict()
         self._items = dict()
         self._pos_users = dict()
         self._pos_items = dict()
+        self._all_users = set()
         self._ratings = self.carrega_ratings("") 
-        print("LOADED")
-        print(self._ratings[:10,:10])
+        print("LOADED") #log
+        return None
 
     @abstractmethod
     def carrega_ratings(self,nom_fitxer):
@@ -41,7 +44,10 @@ class Dataset(ABC):
 
     @abstractmethod
     def carrega_items(self,nom_fitxer):
-        raise NotImplemented         
+        raise NotImplemented    
+
+    def get_users(self):
+        return self._all_users     
 
 
 class DatasetMovies(Dataset):
@@ -66,6 +72,8 @@ class DatasetMovies(Dataset):
         #Carregar usuaris i movies
         self.carrega_items("nom_fitxer",movies) #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
         self.carrega_users("nom_fitxer",users) 
+
+        self._all_users = users
 
         #Crear array y llenarla
         number_of_users = len(users)
@@ -162,4 +170,3 @@ class DatasetBooks(Dataset):
                     self._pos_items[titol] = ISBN
 
 
-dts = DatasetMovies()

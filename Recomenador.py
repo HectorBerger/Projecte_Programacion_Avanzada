@@ -4,12 +4,12 @@ import numpy as np
 class Recomenador:
     _dataset: Dataset
 
-    def __init__(self, dataset) -> True:
+    def __init__(self, dataset): #-> bool:
         self._dataset = dataset
-        return True
+        return None
         
     def recomanacio_simple(self, user_id, min_vots=3):
-        if user_id not in self._dataset._pos_users:
+        if user_id not in self._dataset.get_users():
             print(f"Usuari {user_id} no trobat.")
             return None
 

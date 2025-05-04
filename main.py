@@ -2,17 +2,22 @@
 import pickle
 import logging
 from Recomenador import Recomenador
+from dataset import DatasetMovies, DatasetBooks
+
+#def __main__==
+
+#dataset = arg1
+#method = arg2
 
 #main prueba
-from dataset import DatasetMovies
 
-dataset = DatasetMovies()
-recom = Recomenador(dataset)
+ 
+recom = Recomenador(DatasetMovies())
 
-usuari = 12
+usuari = "1"
 recomanacio = recom.recomanacio_simple(usuari, min_vots=3)
 
-if recomanacio is not None:
+if recomanacio:
     print(f"Recomanació per a l'usuari {usuari}: {recomanacio}")
 else:
     print(f"No hi ha recomanacions disponibles per a l'usuari {usuari}.")
