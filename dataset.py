@@ -50,14 +50,42 @@ class Dataset:
 
     def carrega_ratings(self,nom_fitxer):
         if self.dataset_name == 1:
-            with open
+            movies = set()
+            with open(nom_fitxer) as csvfile:   #fitxer movies
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    movies.add(row[0])
+            users = set()
+            with open(nom_fitxer) as csvfile:   #fitxer ratings
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    users.add(row[0])
         #Recorrer para saber n i m
-            number_of_users = 
-            number_of_items = 
-            np.empty([number_of_users,number_of_items], dtype=np.float16)
+            number_of_users = len(users)
+            number_of_items = len(movies)
+            np.empty([number_of_users,number_of_items], dtype=np.float16) #Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
+            with open(nom_fitxer) as csvfile:   #fitxer ratings
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    #csv.Dictreader con los headers
+                    pass
 
         elif self.dataset_name == 2:
-            number_of_users = 
-            number_of_items = 
+            books = set()
+            with open(nom_fitxer) as csvfile:   #fitxer books
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    books.add(row[0])
+            users = set()
+            with open(nom_fitxer) as csvfile:   #fitxer users/ratings
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    users.add(row[0])
+        #Recorrer para saber n i m
+            number_of_users = len(users)
+            number_of_items = len(books)
             np.empty([number_of_users,number_of_items], dtype=np.int8) 
-
+            with open(nom_fitxer) as csvfile:   #fitxer ratings
+                bookreader = csv.reader(csvfile, delimiter=',')
+                for row in bookreader[1:]:
+                    #csv.Dictreader con los headers
