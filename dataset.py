@@ -23,6 +23,7 @@ class Dataset(ABC):
     _ratings: np.array 
 
     _all_users: set
+    _all_items: set
 
     def __init__(self):
         self._users = dict()
@@ -30,6 +31,7 @@ class Dataset(ABC):
         self._pos_users = dict()
         self._pos_items = dict()
         self._all_users = set()
+        self._all_items = set()
         self._ratings = self.carrega_ratings("") 
         print("LOADED") #log
         return None
@@ -55,35 +57,20 @@ class DatasetMovies(Dataset):
         super().__init__()
 
     def carrega_ratings(self,nom_fitxer):
-
         #Recorrer para saber n i m (el shape de la array)
-        movies = set()
-        with open(NOM_FITXER_MOVIES, encoding="utf-8") as csvfile:   
-            moviesreader = csv.DictReader(csvfile, delimiter=',')
-            for row in moviesreader:
-                movies.add(row["movieId"])
-
-        users = set()
-        with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
-            user_reader = csv.DictReader(csvfile, delimiter=',')
-            for row in user_reader:
-                users.add(row["userId"])
-
         #Carregar usuaris i movies
-        self.carrega_items("nom_fitxer",movies) #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
-        self.carrega_users("nom_fitxer",users) 
-
-        self._all_users = users
+        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
+        self._all_users = self.carrega_users("nom_fitxer") 
 
         #Crear array y llenarla
-        number_of_users = len(users)
-        number_of_items = len(movies)
+        number_of_users = len(self._all_users)
+        number_of_items = len(self._all_items)
         ratings = np.empty([number_of_users,number_of_items], dtype=np.float16) #Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
         with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
                 user_id = row["userId"]
-                movie_id = int(row["movieId"])
+                movie_id = row["movieId"]
 
                 if user_id in self._pos_users.keys() and movie_id in self._pos_items.keys():
                     ratings[self._pos_users[user_id], self._pos_items[movie_id]] = row["rating"]
@@ -93,23 +80,36 @@ class DatasetMovies(Dataset):
         return ratings
                 
 
-    def carrega_users(self,nom_fitxer,users):
+    def carrega_users(self,nom_fitxer):
+        users = set()
+
+        with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
+            user_reader = csv.DictReader(csvfile, delimiter=',')
+            for row in user_reader:
+                users.add(row["userId"])
+
         for i,iduser in enumerate(users):
             self._users[i] = User(iduser) # O només iduser? ja que no ens interessa tota la resta
             self._pos_users[iduser] = i
 
+        return users
+    
+    def carrega_items(self,nom_fitxer):
+        movies = set()
 
-    def carrega_items(self,nom_fitxer,movies):
         with open(NOM_FITXER_MOVIES, encoding="utf-8") as csvfile:   
             moviesreader = csv.DictReader(csvfile, delimiter=',')
             for i,row in enumerate(moviesreader):
-                movieid = int(row["movieId"])
-                titol = str(row["title"].split(" "))
+                movieid = row["movieId"]
+                titol = " ".join(row["title"].split(" ")[:-1])
                 any_movie = str(row["title"].split(" ")[-1].strip("()"))
                 generes = row["genres"].split('|')
-                self._items[i] = Movie(movieid, titol, any_movie, generes)
+                self._items[i] = Movie(movieid, titol, any_movie, generes) 
                 self._pos_items[movieid] = i
- 
+
+                movies.add(row["movieId"])
+
+        return movies
 
 
 class DatasetBooks(Dataset):
@@ -117,26 +117,30 @@ class DatasetBooks(Dataset):
         super().__init__()
 
     def carrega_ratings(self,nom_fitxer):
-        #Recorrer para saber n i m
+        #!#! Arreglar carrega intentar reducir la apertura de archivos y fijarse que los users creados y libros son los que se usan
+
+        #Recorrer para saber n i m 
         books = set()
         with open(NOM_FITXER_BOOKS) as csvfile:   
-            bookreader = csv.reader(csvfile, delimiter=',')
-            for row in bookreader[1:]:
-                books.add(row[0])
+            bookreader = csv.DictReader(csvfile, delimiter=',')
+            for i,row in enumerate(bookreader):
+                books.add(row["ISBN"])
+                if i==10000:
+                    break
                 
         users = set()
         with open(NOM_FITXER_RATING_BOOKS) as csvfile:   
-            bookreader = csv.reader(csvfile, delimiter=',')
-            for row in bookreader[1:]:
-                users.add(row[0])
+            bookreader = csv.DictReader(csvfile, delimiter=',')
+            for row in bookreader:
+                users.add(row["User-ID"])
 
          #Carregar usuaris i movies
-        self.carrega_items("nom_fitxer",books) #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
-        self.carrega_users("nom_fitxer",users.sorted()) 
+        self._all_users = self.carrega_users("nom_fitxer")
+        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
 
         #Crear array y llenarla
-        number_of_users = len(users)
-        number_of_items = len(books)
+        number_of_users = len(self._all_users)
+        number_of_items = len(self._all_items)
         ratings = np.empty([number_of_users,number_of_items], dtype=np.int8) 
         with open(NOM_FITXER_RATING_BOOKS) as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
@@ -144,7 +148,7 @@ class DatasetBooks(Dataset):
                 ratings[ self._pos_users[row["User-ID"]], self._pos_items[row["ISBN"]] ] = row["Book-Rating"] 
 
 
-    def carrega_users(self,nom_fitxer,users):
+    def carrega_users(self,nom_fitxer):
         with open(NOM_FITXER_BOOKS_USERS, 'r') as csvfile:  
             dict_reader = csv.DictReader(csvfile)
             for i,row in enumerate(dict_reader):
@@ -158,15 +162,15 @@ class DatasetBooks(Dataset):
 
     def carrega_items(self,nom_fitxer,books):
         with open(NOM_FITXER_BOOKS) as csvfile:   
-                bookreader = csv.reader(csvfile, delimiter=',') #Va a dar error tiene q ser un dictreader
-                for row in bookreader[1:]:
-                    ISBN = row[0]
+                bookreader = csv.DictReader(csvfile, delimiter=',') #Va a dar error tiene q ser un dictreader
+                for row in bookreader:
+                    isbn = row[0]
                     titol = row[1]
                     autor = row[2]
                     year = row[3]
                     publisher = row[4]
-                    item = Book(ISBN, titol, autor, year, publisher)
-                    self._items[ISBN] = item
-                    self._pos_items[titol] = ISBN
+                    item = Book(isbn, titol, autor, year, publisher) 
+                    self._items[isbn] = item
+                    self._pos_items[titol] = isbn
 
 

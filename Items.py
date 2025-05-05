@@ -9,12 +9,19 @@ class Item(ABC):
 
     @abstractmethod
     def __init__(self,item_id,titol):# -> bool:
-        self._id = str(item_id)
-        self._pos_col = int
-        self._title = str(titol)
+        try:
+            self._id = str(item_id)
+            self._pos_col = int()
+            self._title = str(titol)
+        except:
+            raise ValueError
 
     def assignar_columna(self,col):# -> bool:
         self._pos_col = int(col)
+
+    @abstractmethod
+    def __str__(self):
+        raise NotImplemented
         
     
 class Movie(Item):
@@ -28,8 +35,9 @@ class Movie(Item):
             super().__init__(movie_id,titol)
         except:
             raise ValueError
-        
-
+    
+    def __str__(self):
+        return f"{self._title} ({self._any_movie}). Generes: {"|".join(self._genres)} [ID: {self._id}] "
 
 class Book(Item):
     #isbn = _id
@@ -37,12 +45,14 @@ class Book(Item):
     _any_publicacio: int
     _publisher: str
 
-    def __init__(self,isbn,author,any_pub,publisher) -> bool:
+    def __init__(self,isbn,titol,author,any_pub,publisher): # -> bool:
         try:
-            self._author = str
-            self._any_publicacio = int
-            self._publisher = str
-            super().__init__()
+            self._author = str(author)
+            self._any_publicacio = int(any_pub)
+            self._publisher = str(publisher)
+            super().__init__(isbn,titol)
         except:
             raise ValueError
         
+    def __str__(self):
+        return f"{self._title} de {self._author}. Publicat per {self._publisher} a l'any {self._any_publicacio}. [ISBN: {self._id}] "
