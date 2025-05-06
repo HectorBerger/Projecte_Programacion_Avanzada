@@ -75,7 +75,7 @@ class DatasetMovies(Dataset):
                 if user_id in self._pos_users.keys() and movie_id in self._pos_items.keys():
                     ratings[self._pos_users[user_id], self._pos_items[movie_id]] = row["rating"]
                 else:
-                    print(f"User or movie not found: userId={user_id}, movieId={movie_id}")
+                    print(f"User or movie not found: userId={user_id}, movieId={movie_id}") #DEBUG
 
         return ratings
                 
@@ -120,23 +120,9 @@ class DatasetBooks(Dataset):
         #!#! Arreglar carrega intentar reducir la apertura de archivos y fijarse que los users creados y libros son los que se usan
 
         #Recorrer para saber n i m 
-        books = set()
-        with open(NOM_FITXER_BOOKS) as csvfile:   
-            bookreader = csv.DictReader(csvfile, delimiter=',')
-            for i,row in enumerate(bookreader):
-                books.add(row["ISBN"])
-                if i==10000:
-                    break
-                
-        users = set()
-        with open(NOM_FITXER_RATING_BOOKS) as csvfile:   
-            bookreader = csv.DictReader(csvfile, delimiter=',')
-            for row in bookreader:
-                users.add(row["User-ID"])
-
-         #Carregar usuaris i movies
-        self._all_users = self.carrega_users("nom_fitxer")
+        #Carregar els primer 10,000 books i els usuaris més adhients 
         self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
+        self._all_users = self.carrega_users("nom_fitxer")
 
         #Crear array y llenarla
         number_of_users = len(self._all_users)
@@ -145,32 +131,58 @@ class DatasetBooks(Dataset):
         with open(NOM_FITXER_RATING_BOOKS) as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
-                ratings[ self._pos_users[row["User-ID"]], self._pos_items[row["ISBN"]] ] = row["Book-Rating"] 
+                user_id = row["User-ID"]
+                isbn = row["ISBN"]
+
+                if user_id in self._pos_users.keys() and isbn in self._pos_items.keys():
+                    ratings[self._pos_users[user_id], self._pos_items[isbn]] = row["Book-Rating"] 
+                else:
+                    print(f"User or book not found: userId={user_id}, ISBN={isbn}") #DEBUG
+
+        return ratings
 
 
     def carrega_users(self,nom_fitxer):
+        users = set()
+        with open(NOM_FITXER_RATING_BOOKS) as csvfile:   
+            bookreader = csv.DictReader(csvfile, delimiter=',')
+            for row in bookreader:
+                if 
+                    users.add(row["User-ID"])
+
         with open(NOM_FITXER_BOOKS_USERS, 'r') as csvfile:  
             dict_reader = csv.DictReader(csvfile)
             for i,row in enumerate(dict_reader):
-                self._users[i] = User(row["User-ID"],row["Location"],row["Age"])
-                self._pos_users[row["User-ID"]] = i
+                if row["User-ID"] in users:
+                    self._users[i] = User(row["User-ID"],row["Location"],row["Age"])
+                    self._pos_users[row["User-ID"]] = i
 
-        if len(users) == len(self._users):
-            return True
-        return False
+        if len(users) != len(self._users):
+            raise ImportError
+
+        return users
     
 
     def carrega_items(self,nom_fitxer,books):
+        books = set()
+
         with open(NOM_FITXER_BOOKS) as csvfile:   
-                bookreader = csv.DictReader(csvfile, delimiter=',') #Va a dar error tiene q ser un dictreader
-                for row in bookreader:
-                    isbn = row[0]
-                    titol = row[1]
-                    autor = row[2]
-                    year = row[3]
-                    publisher = row[4]
-                    item = Book(isbn, titol, autor, year, publisher) 
-                    self._items[isbn] = item
-                    self._pos_items[titol] = isbn
+                bookreader = csv.DictReader(csvfile, delimiter=',') 
+                for i,row in enumerate(bookreader):
+                    isbn = row["ISBN"]
+                    titol = row["Book-Title"]
+                    autor = row["Book-Author"]
+                    year = row["Year-Of-Publication"]
+                    publisher = row["Publisher"]
+                    self._items[i] = Book(isbn, titol, autor, year, publisher) 
+                    self._pos_items[titol] = i
+
+                    books.add(row["ISBN"])
+
+                    if i==10000:
+                        break
+        
+        return books
+
 
 
