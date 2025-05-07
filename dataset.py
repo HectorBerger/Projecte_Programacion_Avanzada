@@ -65,7 +65,7 @@ class DatasetMovies(Dataset):
         #Crear array y llenarla
         number_of_users = len(self._all_users)
         number_of_items = len(self._all_items)
-        ratings = np.empty([number_of_users,number_of_items], dtype=np.float16) #Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
+        ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.float16) )#Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
         with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
@@ -127,35 +127,40 @@ class DatasetBooks(Dataset):
         #Crear array y llenarla
         number_of_users = len(self._all_users)
         number_of_items = len(self._all_items)
-        ratings = np.empty([number_of_users,number_of_items], dtype=np.int8) 
+        ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
         with open(NOM_FITXER_RATING_BOOKS) as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
                 user_id = row["User-ID"]
                 isbn = row["ISBN"]
 
-                if user_id in self._pos_users.keys() and isbn in self._pos_items.keys():
-                    ratings[self._pos_users[user_id], self._pos_items[isbn]] = row["Book-Rating"] 
-                else:
-                    print(f"User or book not found: userId={user_id}, ISBN={isbn}") #DEBUG
+                if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
+                    ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
 
         return ratings
 
 
     def carrega_users(self,nom_fitxer):
-        users = set()
+        temp_users = dict()
         with open(NOM_FITXER_RATING_BOOKS) as csvfile:   
             bookreader = csv.DictReader(csvfile, delimiter=',')
             for row in bookreader:
-                if 
-                    users.add(row["User-ID"])
+                if row["ISBN"] in self._all_items:
+                    if row["User-ID"] in temp_users: # and int(row["Book-Rating"]) > 0:
+                        temp_users[row["User-ID"]] += 1
+                    else:
+                        temp_users[row["User-ID"]] = 1
+
+        users = set([user_id for user_id, num_relevancia in sorted(temp_users.items(), key=lambda x: x[1], reverse=True)[:10000]])
 
         with open(NOM_FITXER_BOOKS_USERS, 'r') as csvfile:  
             dict_reader = csv.DictReader(csvfile)
-            for i,row in enumerate(dict_reader):
+            pos = 0
+            for row in dict_reader:
                 if row["User-ID"] in users:
-                    self._users[i] = User(row["User-ID"],row["Location"],row["Age"])
-                    self._pos_users[row["User-ID"]] = i
+                    self._users[pos] = User(row["User-ID"],row["Location"],row["Age"])
+                    self._pos_users[row["User-ID"]] = pos
+                    pos += 1
 
         if len(users) != len(self._users):
             raise ImportError
@@ -163,7 +168,7 @@ class DatasetBooks(Dataset):
         return users
     
 
-    def carrega_items(self,nom_fitxer,books):
+    def carrega_items(self,nom_fitxer):
         books = set()
 
         with open(NOM_FITXER_BOOKS) as csvfile:   
@@ -175,7 +180,7 @@ class DatasetBooks(Dataset):
                     year = row["Year-Of-Publication"]
                     publisher = row["Publisher"]
                     self._items[i] = Book(isbn, titol, autor, year, publisher) 
-                    self._pos_items[titol] = i
+                    self._pos_items[isbn] = i
 
                     books.add(row["ISBN"])
 
@@ -183,6 +188,5 @@ class DatasetBooks(Dataset):
                         break
         
         return books
-
 
 

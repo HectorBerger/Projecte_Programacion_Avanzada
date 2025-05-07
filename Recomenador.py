@@ -55,6 +55,7 @@ class Recomenador:
             llista_valoracions.append((score, item_id))
 
         llista_valoracions = sorted(llista_valoracions, key=lambda x: x[0], reverse=True) #Ordenem segons el score de més gran a més petit
+        print(avg_global)
         return llista_valoracions[:5]
 
     def recomanacio_colaboratiu(self, user, item):
@@ -68,13 +69,13 @@ class Recomenador:
     def get_avg(self, item_id):
         col = self._dataset._pos_items[item_id]   # Obté la columna corresponent a l'ítem
         values = self._dataset._ratings[:, col]   # Obté els valors de la columna
-        non_zero = values[values > 0] # Filtra només les valoracions que són més grans que 0
-        return np.mean(non_zero) if len(non_zero) > 0 else 0  # Retorna la mitjana si n’hi ha
+        avaluades = values[values != -1] # Filtra només les valoracions que han estat efectuadas
+        return np.mean(avaluades) if len(avaluades) > 0 else 0  # Retorna la mitjana si n’hi ha
     
     def get_avg_global(self):
         all_ratings = self._dataset._ratings # Obté tota la matriu de valoracions del dataset
-        non_zero = all_ratings[all_ratings > 0]  # Filtra només les valoracions positives
-        return np.mean(non_zero) if len(non_zero) > 0 else 0 # Retorna la mitjana global
+        avaluades = all_ratings[all_ratings != -1]  # Filtra només les valoracions que han estat efectuadas
+        return np.mean(avaluades) if len(avaluades) > 0 else 0 # Retorna la mitjana global
     
 
     #def get_item(self,id):

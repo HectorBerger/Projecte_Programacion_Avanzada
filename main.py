@@ -10,9 +10,9 @@ from dataset import DatasetMovies, DatasetBooks
 #method = arg2
 
 #main prueba
-#DatasetBooks()
-recom = Recomenador(DatasetMovies())
-usuari = "2"
+#DatasetBooks()DatasetMovies
+recom = Recomenador(DatasetBooks())
+usuari = "14"
 recomanacio = recom.recomanacio_simple(usuari, min_vots=3)
 
 if recomanacio:
