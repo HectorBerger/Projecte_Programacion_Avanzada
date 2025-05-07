@@ -18,8 +18,8 @@ NOM_FITXER_BOOKS_USERS = "dataset/Books/Users.csv"
 class Dataset(ABC):
     _users: Dict[int , User] # fila : User
     _items: Dict[int , Item] # columna : Item
-    _pos_users: Dict[str, int] #IdUser : fila
-    _pos_items: Dict[str, int] #IdItem : columna
+    _pos_users: Dict[str, int] #id_user : fila
+    _pos_items: Dict[str, int] #id_item : columna
     _ratings: np.array 
 
     _all_users: set
@@ -28,13 +28,13 @@ class Dataset(ABC):
     def __init__(self):
         self._users = dict()
         self._items = dict()
-        self._pos_users = dict()
+        self._pos_users = dict() #Cambiar "pos" por "row" i "column" (o "fila" i "columna")
         self._pos_items = dict()
         self._all_users = set()
         self._all_items = set()
         self._ratings = self.carrega_ratings("") 
         print("LOADED") #log
-        return None
+        return True
 
     @abstractmethod
     def carrega_ratings(self,nom_fitxer):
@@ -48,8 +48,25 @@ class Dataset(ABC):
     def carrega_items(self,nom_fitxer):
         raise NotImplemented    
 
+    def print_recomenacions(llista_recomenacions,k=5):
+        for i in range(k):
+            print(f"")#Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} "))
+
+    def get_ratings(self):
+        return self._ratings
+    
     def get_users(self):
         return self._all_users     
+    
+    def get_row_user(self, id_user:str): #O "pos"?
+        if id_user in self._pos_users.keys():
+            return self._pos_users[id_user]
+        raise ValueError
+    
+    def get_col_item(self, id_item:str):
+        if id_item in self._pos_items.keys():
+            return self._pos_items[id_item]
+        raise KeyError
 
 
 class DatasetMovies(Dataset):
@@ -66,7 +83,7 @@ class DatasetMovies(Dataset):
         number_of_users = len(self._all_users)
         number_of_items = len(self._all_items)
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.float16) )#Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
-        with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
+        with open(NOM_FITXER_RATINGS_MOVIES, 'r', encoding="utf-8") as csvfile:   
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
                 user_id = row["userId"]
@@ -83,7 +100,7 @@ class DatasetMovies(Dataset):
     def carrega_users(self,nom_fitxer):
         users = set()
 
-        with open(NOM_FITXER_RATINGS_MOVIES, encoding="utf-8") as csvfile:   
+        with open(NOM_FITXER_RATINGS_MOVIES, 'r', encoding="utf-8") as csvfile:   
             user_reader = csv.DictReader(csvfile, delimiter=',')
             for row in user_reader:
                 users.add(row["userId"])
@@ -97,7 +114,7 @@ class DatasetMovies(Dataset):
     def carrega_items(self,nom_fitxer):
         movies = set()
 
-        with open(NOM_FITXER_MOVIES, encoding="utf-8") as csvfile:   
+        with open(NOM_FITXER_MOVIES, 'r', encoding="utf-8") as csvfile:   
             moviesreader = csv.DictReader(csvfile, delimiter=',')
             for i,row in enumerate(moviesreader):
                 movieid = row["movieId"]
@@ -128,7 +145,7 @@ class DatasetBooks(Dataset):
         number_of_users = len(self._all_users)
         number_of_items = len(self._all_items)
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
-        with open(NOM_FITXER_RATING_BOOKS) as csvfile:
+        with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
                 user_id = row["User-ID"]
@@ -142,7 +159,7 @@ class DatasetBooks(Dataset):
 
     def carrega_users(self,nom_fitxer):
         temp_users = dict()
-        with open(NOM_FITXER_RATING_BOOKS) as csvfile:   
+        with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:   
             bookreader = csv.DictReader(csvfile, delimiter=',')
             for row in bookreader:
                 if row["ISBN"] in self._all_items:
@@ -153,7 +170,7 @@ class DatasetBooks(Dataset):
 
         users = set([user_id for user_id, num_relevancia in sorted(temp_users.items(), key=lambda x: x[1], reverse=True)[:10000]])
 
-        with open(NOM_FITXER_BOOKS_USERS, 'r') as csvfile:  
+        with open(NOM_FITXER_BOOKS_USERS, 'r', encoding="utf-8") as csvfile:  
             dict_reader = csv.DictReader(csvfile)
             pos = 0
             for row in dict_reader:
@@ -171,7 +188,7 @@ class DatasetBooks(Dataset):
     def carrega_items(self,nom_fitxer):
         books = set()
 
-        with open(NOM_FITXER_BOOKS) as csvfile:   
+        with open(NOM_FITXER_BOOKS, 'r', encoding="utf-8") as csvfile:   
                 bookreader = csv.DictReader(csvfile, delimiter=',') 
                 for i,row in enumerate(bookreader):
                     isbn = row["ISBN"]

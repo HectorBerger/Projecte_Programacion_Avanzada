@@ -11,7 +11,7 @@ from dataset import DatasetMovies, DatasetBooks
 
 #main prueba
 #DatasetBooks()DatasetMovies
-recom = Recomenador(DatasetBooks())
+recom = Recomenador(DatasetMovies())
 usuari = "14"
 recomanacio = recom.recomanacio_simple(usuari, min_vots=3)
 

@@ -1,11 +1,13 @@
 from dataset import Dataset
 import numpy as np
+import math
 
 class Recomenador:
     _dataset: Dataset
 
     def __init__(self, dataset): #-> bool:
         self._dataset = dataset
+        #hauriem de tenir un atribut array?
         return None
         
     def __str__(self):
@@ -18,18 +20,19 @@ class Recomenador:
             return None
 
         # Obté la fila de la matriu que correspon a aquest usuari i les seves valoracions
-        user_row = self._dataset._pos_users[user_id]
-        ratings = self._dataset._ratings[user_row]
+        user_row = self._dataset.get_row_user(user_id) #crear getters
+        user_ratings = self._dataset._ratings[user_row]
 
         millor_item = None # Aquí guardarem l’ítem recomanat
         millor_score = -1  # Inicialitzem el millor score
-        avg_global = self.get_avg_global() #Calculem la mitjana global
+                #!#!Habría que hacerlo al iniciar los datasets?
+        avg_global = self.get_avg_global() #Calculem la mitjana global 
         llista_valoracions = [] #On guardarem totes les valoracions
 
         # Iterem per tots els ítems disponibles
         for item_id, col in self._dataset._pos_items.items():
             # Si l’usuari ja ha valorat aquest ítem, el saltem
-            if ratings[col] > 0:
+            if user_ratings[col] > 0:
                 continue  # Ja l'ha valorat
 
             # Comptem quants vots té aquest ítem i mirem que sigui fiable
@@ -55,13 +58,48 @@ class Recomenador:
             llista_valoracions.append((score, item_id))
 
         llista_valoracions = sorted(llista_valoracions, key=lambda x: x[0], reverse=True) #Ordenem segons el score de més gran a més petit
-        print(avg_global)
+        
         return llista_valoracions[:5]
 
-    def recomanacio_colaboratiu(self, user, item):
-        pass
+    def recomanacio_colaboratiu(self, user_id, k):
+        
+        array_ratings = self._dataset.get_ratings()
+        llista_recomenacions = []
+        user_pos = self._dataset.get_row_user(user_id)
+        user_row = array_ratings[user_pos]
+        llista_similitud = []
 
-    def get_num_vots(self, item_id):
+        #1
+        for i,row in enumerate(array_ratings): 
+            if user_pos != i:
+                mask = (user_row != -1) & (row != -1)
+                if np.any(mask):
+                    denominator = (
+                        math.sqrt(np.sum(np.power(user_row[mask], 2))) *
+                        math.sqrt(np.sum(np.power(row[mask], 2)))
+                    )
+                    if denominator != 0:
+                        similitud = np.dot(user_row[mask], row[mask]) / denominator
+                    else:
+                        similitud = 0
+                else:
+                    similitud = 0
+
+                llista_similitud.append( (i,similitud) )
+
+
+        #2
+        llista_similitud = sorted(llista_similitud, key=lambda x: x[1], reverse=True)[:k] #Ordenem segons el score de més gran a més petit
+
+        #3
+        mask
+        mitja_user = np.mean(user_row[user_row != -1])
+        for 
+        llista_recomenacions =
+        return llista_recomenacions[:5]
+
+    #!#!#Mejorar lógica intentar hacerlos más generales 
+    def get_num_vots(self, item_id): 
         col = self._dataset._pos_items[item_id]  # Obté la columna corresponent
         column_values = self._dataset._ratings[:, col]  # Obté els valors de la columna
         return np.count_nonzero(column_values)  # Retorna quantes valoracions són no-zero (valoracions reals)
