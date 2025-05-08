@@ -70,7 +70,7 @@ class Recomenador:
         llista_similitud = []
 
         #1
-        for i,row in enumerate(array_ratings): 
+        for i,row in enumerate(array_ratings): #i = numero de fila del veï 
             if user_pos != i:
                 mask = (user_row != -1) & (row != -1)
                 if np.any(mask):
@@ -91,11 +91,53 @@ class Recomenador:
         #2
         llista_similitud = sorted(llista_similitud, key=lambda x: x[1], reverse=True)[:k] #Ordenem segons el score de més gran a més petit
 
-        #3
-        mask
-        mitja_user = np.mean(user_row[user_row != -1])
-        for 
-        llista_recomenacions =
+        # Step 3: Calculate scores for items not rated by the user
+        user_rated_mask = user_row != -1 # Mask for items rated by the active user
+        mitja_user = np.mean(user_row[user_rated_mask])
+
+        vei_rows = array_ratings[[sim[0] for sim in llista_similitud], :]
+        not_user_rated_mask = not user_rated_mask
+        array_veins = vei_rows[:, not_user_rated_mask]
+        not_veins_rated_mask = array_veins != -1
+        array_veins = array_veins[not_veins_rated_mask]
+        columna_similitud = np.column_stack(np.array([sim[1] for sim in llista_similitud]))
+
+
+        for vei_row, similitud  in zip(llista_similitud): #peli no vista de user
+            denominator = np.sum(np.abs())
+            score = mitja_user + np.dot() / \
+                    denominator
+            
+            item_id = i
+        
+            llista_recomenacions.append((score, item_id)) # Append the score and item ID
+        
+
+
+        # Iterate over all items
+        for item_id, col in self._dataset._pos_items.items():
+            if user_row[col] == -1:  # Only consider items not rated by the user
+                # Calculate the numerator and denominator of the formula
+                similarities = np.array([sim for _, sim in llista_similitud])  # Similarities with top-k users
+                neighbor_ratings = array_ratings[:, col]  # Ratings of the current item by all users
+                neighbor_means = np.array([np.mean(row[row != -1]) if np.any(row != -1) else 0 for row in array_ratings])  # Mean ratings of all users
+
+                # Mask for neighbors who rated the item
+                neighbor_mask = neighbor_ratings != -1
+
+                # Calculate the numerator and denominator
+                numerator = np.sum(similarities[neighbor_mask] * (neighbor_ratings[neighbor_mask] - neighbor_means[neighbor_mask]))
+                denominator = np.sum(np.abs(similarities[neighbor_mask]))
+
+                # Calculate the final score
+                if denominator != 0:
+                    score = mitja_user + numerator / denominator
+                else:
+                    score = mitja_user  # Default to the user's mean if no neighbors rated the item
+
+
+        # Sort the scores and return the top 5 recommendations
+        llista_recomenacions = sorted(llista_recomenacions, key=lambda x: x[1], reverse=True )
         return llista_recomenacions[:5]
 
     #!#!#Mejorar lógica intentar hacerlos más generales 
