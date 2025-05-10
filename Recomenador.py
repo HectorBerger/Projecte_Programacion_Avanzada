@@ -55,7 +55,7 @@ class Recomenador:
             """
             
             #Guardem un tuple a la llista de valoracions el score i el id del item
-            llista_valoracions.append((score, item_id))
+            llista_valoracions.append((score, item_id)) #!#! No es más lógico del reves?
 
         llista_valoracions = sorted(llista_valoracions, key=lambda x: x[0], reverse=True) #Ordenem segons el score de més gran a més petit
         
@@ -92,55 +92,37 @@ class Recomenador:
         llista_similitud = sorted(llista_similitud, key=lambda x: x[1], reverse=True)[:k] #Ordenem segons el score de més gran a més petit
 
         # Step 3: Calculate scores for items not rated by the user
-        user_rated_mask = user_row != -1 # Mask for items rated by the active user
-        mitja_user = np.mean(user_row[user_rated_mask])
-
-        vei_rows = array_ratings[[sim[0] for sim in llista_similitud], :]
-        not_user_rated_mask = not user_rated_mask
-        array_veins = vei_rows[:, not_user_rated_mask]
-        not_veins_rated_mask = array_veins != -1
-        array_veins = array_veins[not_veins_rated_mask]
-        columna_similitud = np.column_stack(np.array([sim[1] for sim in llista_similitud]))
-
-
-        for vei_row, similitud  in zip(llista_similitud): #peli no vista de user
-            denominator = np.sum(np.abs())
-            score = mitja_user + np.dot() / \
-                    denominator
-            
-            item_id = i
         
-            llista_recomenacions.append((score, item_id)) # Append the score and item ID
-        
+        #Pre-càlculs per ser més eficients i l'array dels top-k veins 
+        mitja_user = np.mean(user_row[user_row != -1]) #Esto lo podriamos hacer al iniciar en el pickle
+        veins_arrays = array_ratings[[sim[0] for sim in llista_similitud], :]
+        mitjas_veins = np.column_stack(np.array([np.mean(row[row != -1]) if np.any(row != -1) else 0 for row in veins_arrays]))  # Mean ratings of all neighbors
+        columna_similitud = np.column_stack(np.array([sim[1] for sim in llista_similitud])) # Similarities with top-k veins
 
-
-        # Iterate over all items
-        for item_id, col in self._dataset._pos_items.items():
+        for item_id, col in self._dataset._pos_items.items(): #S'ha d'iterar per items no vists per l'user (columnes)
             if user_row[col] == -1:  # Only consider items not rated by the user
-                # Calculate the numerator and denominator of the formula
-                similarities = np.array([sim for _, sim in llista_similitud])  # Similarities with top-k users
-                neighbor_ratings = array_ratings[:, col]  # Ratings of the current item by all users
-                neighbor_means = np.array([np.mean(row[row != -1]) if np.any(row != -1) else 0 for row in array_ratings])  # Mean ratings of all users
+                veins_col = np.column_stack(veins_arrays[:, col])  # Ratings of the current item by all neighbors
 
                 # Mask for neighbors who rated the item
-                neighbor_mask = neighbor_ratings != -1
+                veins_mask = veins_col != -1
 
                 # Calculate the numerator and denominator
-                numerator = np.sum(similarities[neighbor_mask] * (neighbor_ratings[neighbor_mask] - neighbor_means[neighbor_mask]))
-                denominator = np.sum(np.abs(similarities[neighbor_mask]))
+                numerator = np.sum( columna_similitud[veins_mask] * (veins_col[veins_mask] - mitjas_veins[veins_mask]) )
+                denominator = np.sum(np.abs(columna_similitud[veins_mask]))
 
                 # Calculate the final score
                 if denominator != 0:
                     score = mitja_user + numerator / denominator
                 else:
                     score = mitja_user  # Default to the user's mean if no neighbors rated the item
-
+                
+                llista_recomenacions.append((score, item_id)) # Append the score and item ID #!#! Cómo he puesto antesno es más lógico del reves?
 
         # Sort the scores and return the top 5 recommendations
         llista_recomenacions = sorted(llista_recomenacions, key=lambda x: x[1], reverse=True )
         return llista_recomenacions[:5]
 
-    #!#!#Mejorar lógica intentar hacerlos más generales 
+    #!#!#Mejorar lógica intentar hacerlos más generales i iniciarlos al principio con los datasets
     def get_num_vots(self, item_id): 
         col = self._dataset._pos_items[item_id]  # Obté la columna corresponent
         column_values = self._dataset._ratings[:, col]  # Obté els valors de la columna

@@ -4,21 +4,24 @@ import logging
 from Recomenador import Recomenador
 from dataset import DatasetMovies, DatasetBooks
 
-#def __main__==
+
 
 #dataset = arg1
 #method = arg2
 
 #main prueba
 #DatasetBooks()DatasetMovies
-recom = Recomenador(DatasetMovies())
-usuari = "14"
-recomanacio = recom.recomanacio_simple(usuari, min_vots=3)
 
-if recomanacio:
-    print(f"Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} ")
-else:
-    print(f"No hi ha recomanacions disponibles per a l'usuari {usuari}.")
+if __name__ == "__main__":
+
+    recom = Recomenador(DatasetMovies())
+    usuari = "23"
+    recomanacio = recom.recomanacio_colaboratiu(usuari, 3)
+
+    if recomanacio:
+        print(f"Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} ")
+    else:
+        print(f"No hi ha recomanacions disponibles per a l'usuari {usuari}.")
 
 
 
