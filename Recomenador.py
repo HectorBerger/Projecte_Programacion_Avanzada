@@ -2,20 +2,36 @@ from dataset import Dataset
 import numpy as np
 import math
 
-class Recomenador:
+class Recomenador: #!#!Hacerla calse abstracta?
     _dataset: Dataset
+    #_recomanacions: Dict? #id_user : List[Tuples] 
 
     def __init__(self, dataset): #-> bool:
         self._dataset = dataset
-        #hauriem de tenir un atribut array?
+        self._recomanacions = dict()
+        #hauriem de tenir un atribut array? 
+        #!#!Hauriem de fer una clase amb nomes els algoritmes classe abstracta i tota la resta 
         return None
         
     def __str__(self):
         return #f"Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} "
     
+    def imprimir_recomanacions(self, usuari):
+        if usuari in self._recomanacions.keys():
+            for i in range(5): #Hay q poner getters
+                print(f"Recomanació per a l'usuari {usuari}: {self._dataset._items[self._dataset._pos_items[self._recomanacions[usuari][i][1]]]} amb score {round(self._recomanacions[usuari][i][0])} ")
+        else:
+            print(f"No hi ha recomanacions disponibles per a l'usuari {usuari}.")
+
+        return True
+    
+    def recomenar(self, user_id, arg2):
+        self._recomanacions[user_id] = self.recomanacio_colaboratiu(user_id, arg2)
+        return True
+
     def recomanacio_simple(self, user_id, min_vots=3):
         # Comprova si l’usuari existeix al dataset
-        if user_id not in self._dataset.get_users():
+        if user_id not in self._dataset.get_users(): #!#!No haria falta porq lo comprobamos antes
             print(f"Usuari {user_id} no trobat.")
             return None
 
@@ -23,8 +39,9 @@ class Recomenador:
         user_row = self._dataset.get_row_user(user_id) #crear getters
         user_ratings = self._dataset._ratings[user_row]
 
-        millor_item = None # Aquí guardarem l’ítem recomanat
-        millor_score = -1  # Inicialitzem el millor score
+        #millor_item = None # Aquí guardarem l’ítem recomanat
+        #millor_score = -1  # Inicialitzem el millor score
+                
                 #!#!Habría que hacerlo al iniciar los datasets?
         avg_global = self.get_avg_global() #Calculem la mitjana global 
         llista_valoracions = [] #On guardarem totes les valoracions
@@ -140,4 +157,3 @@ class Recomenador:
         return np.mean(avaluades) if len(avaluades) > 0 else 0 # Retorna la mitjana global
     
 
-    #def get_item(self,id):
