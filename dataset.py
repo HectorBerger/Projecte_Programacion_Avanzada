@@ -1,7 +1,7 @@
 from typing import Dict
-from items import Item, Book, Movie
+from Items import Item, Book, Movie
 from abc import ABC, abstractmethod 
-from user import User
+from User import User
 import csv
 import numpy as np
 
@@ -67,6 +67,11 @@ class Dataset(ABC):
         if id_item in self._pos_items.keys():
             return self._pos_items[id_item]
         raise KeyError
+    
+    def get_item(self, item_id: str):
+        col = self.get_col_item(item_id)
+        return self._items[col]
+
 
 
 class DatasetMovies(Dataset):

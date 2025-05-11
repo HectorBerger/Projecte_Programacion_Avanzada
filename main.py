@@ -33,8 +33,11 @@ def main():
     loop = True
     while loop:
         user_id = input("Introdueix un ID de usuari: ") #!#!Habría que comprovar si existe dentro del dataset
-        while not user_id in r._dataset.get_users(): 
-            user_id = input(f"ID de usuari no existent (alguns possibles IDs: [{r._dataset.get_users[:5]}]):")
+
+        while not r.has_user(user_id): # Comprovar si existeix
+            mostra = ", ".join(r.sample_users())
+            user_id = input(f"ID no existent (alguns possibles IDs: [{mostra}]):")
+            
         accio = input("Introdueix una acció (Recomenació, Avaluació, Sortir): ")
         match accio:
             case "Recomenació":
