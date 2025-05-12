@@ -3,13 +3,12 @@ import pickle
 import argparse
 import os.path
 import logging
-from Recomenador import Recomenador
+from recomenador import Simple, Colaboratiu, BasatEnContinguts 
 from dataset import DatasetMovies, DatasetBooks
-
 
 def main():
     parser = argparse.ArgumentParser(description="Aplicar un algorisme de recomanació a un dataset per diferents usuaris a escollir.") #Hemos usado argparse para poder mostrar el help más fácilmente
-    parser.add_argument("dataset", choices=["MovieLens100k", "Books", "Amazon"], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'Amazon' per a recomanacions de productes Amazon.") #!#! default?  type=str?=>not necessary
+    parser.add_argument("dataset", choices=["MovieLens100k", "Books", ""], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'Amazon' per a recomanacions de productes Amazon.") #!#! default? 
     parser.add_argument("method", choices=["Simple", "Col·laboratiu", "BasatEnContingut"], help="Especifiqueu el algoritme de recomanació a utilitzar: 'Simple', 'Col·laboratiu' o 'BasatEnContingut'.")
  
     args = parser.parse_args()
@@ -20,9 +19,17 @@ def main():
     if not os.path.isfile(filename):
         match dataset:
             case "MovieLens100k":
-                r = Recomenador(DatasetMovies())
+                d = DatasetMovies()
             case "Books":
-                r = Recomenador(DatasetBooks())
+                d = DatasetBooks()
+
+        match method:
+            case "Simple":
+                r = Simple(d) #Millor acurtar a Simple?
+            case "Col·laboratiu":
+                r = Colaboratiu(d)
+            case "BasatEnContingut":
+                r = BasatEnContinguts(d)
         #càlculs generals
 
     else:
@@ -36,11 +43,12 @@ def main():
 
         while not r.has_user(user_id): # Comprovar si existeix
             mostra = ", ".join(r.sample_users())
-            user_id = input(f"ID no existent (alguns possibles IDs: [{mostra}]):")
+            user_id = input(f"ID no existent (alguns possibles IDs [{mostra}]):")
             
         accio = input("Introdueix una acció (Recomenació, Avaluació, Sortir): ")
         match accio:
             case "Recomenació":
+                #num_r = input("Entra el número de recomanacions a mostrar: ") 
                 r.recomenar(user_id,4)
                 r.imprimir_recomanacions(user_id)
 
@@ -48,7 +56,7 @@ def main():
                 print()#Mètriques (MAE,RMSE)
 
             case "Sortir":
-                print("Sortint...")
+                print("Sortint...\n")
                 # Per guardar en un fitxer binari una còpia exacta de l’objecte
                 with open(filename, 'wb') as fitxer:
                     pickle.dump(r, fitxer)

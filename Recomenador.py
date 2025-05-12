@@ -1,6 +1,7 @@
 from dataset import Dataset
 import numpy as np
 import math
+import random
 from abc import ABC, abstractmethod
 
 
@@ -17,27 +18,24 @@ class Recomenador(ABC):
     def has_user(self, user_id: str):
         return user_id in self._dataset.get_users()
     
-    def sample_user(self, k=5):
-        return list(self._dataset.get_users())[:k]
+    def sample_users(self, k=5):
+        return random.sample(list(self._dataset.get_users()), k)
 
     @abstractmethod
-    def recomenar(self, user_id: str, arg2: int):
-        pass
+    def recomenar(self, user_id: str, k: int, num_r: int = 5):
+        raise NotImplementedError
 
-    def get_recomanacions(self, user_id: str):
-        return self._recomanacions.get(user_id, None)
     
-    def imprimir_recomanacions(self, user_id: str, k : int = 5):
+    def imprimir_recomanacions(self, user_id: str, num_r: int = 5):
         """Imprimeix les recomanacions per a un usuari donat."""
-        recs = self.get_recomanacions(user_id)
-        if not recs:
+        if not user_id in self._recomanacions :
             print(f"No hi ha recomanacions disponibles per a l'usuari {user_id}.")
             return False
-        
-        for item_id, score in recs[:k]:
-            item = self._dataset.get_item(item_id)
-            print(f"Recomanació per a l'usuari {user_id}: {item} amb score {score:.1f}")
-        return True
+        else:
+            for item_id, score in self._recomanacions[user_id]:
+                item = self._dataset.get_item(item_id)
+                print(f"Recomanació per a l'usuari {user_id}: {item} amb score {score:.1f}")
+            return True
     
     def get_num_vots(self, item_id: str):
         """Retorna el nombre de vots per a un ítem donat."""
@@ -58,9 +56,9 @@ class Recomenador(ABC):
         return np.mean(valid) if len(valid) > 0 else 0
     
     
-class RecomenadorSimple(Recomenador):
+class Simple(Recomenador):
     
-    def recomenar(self, user_id: str, min_vots: int = 3):
+    def recomenar(self, user_id: str, min_vots: int = 3, num_r:int=5):
         """Recomanació simple basada en la mitjana ponderada de les valoracions."""
         if not self.has_user(user_id):
             print(f"Usuari {user_id} no trobat.")
@@ -92,12 +90,12 @@ class RecomenadorSimple(Recomenador):
             llista_valoracions.append((item_id, score))
 
         llista_valoracions = sorted(llista_valoracions, key=lambda x: x[1], reverse=True) #Ordenem segons el score de més gran a més petit
-        
-        return llista_valoracions[:5]
+        self._recomanacions[user_id] = llista_valoracions[:num_r]
+        return True
     
-class RecomenadorColaboratiu(Recomenador):
+class Colaboratiu(Recomenador):
 
-    def recomenar(self, user_id: str, k: int):
+    def recomenar(self, user_id: str, k: int, num_r: int = 5):
         """Recomanació col·laborativa basada en la similitud entre usuaris."""
         array_ratings = self._dataset.get_ratings()
         llista_recomenacions = []
@@ -156,9 +154,17 @@ class RecomenadorColaboratiu(Recomenador):
 
         # Sort the scores and return the top 5 recommendations
         llista_recomenacions = sorted(llista_recomenacions, key=lambda x: x[1], reverse=True )
-        return llista_recomenacions[:5]
+        self._recomanacions[user_id] = llista_recomenacions[:num_r]
+        return True 
 
 
+
+class BasatEnContinguts(Recomenador):
+
+    def recomenar(self, user_id, arg2, num_r: int = 5):
+        llista_recomenacions = []
+        self._recomanacions[user_id] = llista_recomenacions[:num_r]
+        return True
     
 
     

@@ -1,7 +1,7 @@
 from typing import Dict
-from Items import Item, Book, Movie
+from items import Item, Book, Movie
 from abc import ABC, abstractmethod 
-from User import User
+from user import User
 import csv
 import numpy as np
 
@@ -38,15 +38,15 @@ class Dataset(ABC):
 
     @abstractmethod
     def carrega_ratings(self,nom_fitxer):
-        raise NotImplemented
+        raise NotImplementedError
                 
     @abstractmethod
     def carrega_users(self,nom_fitxer):
-        raise NotImplemented    
+        raise NotImplementedError   
 
     @abstractmethod
     def carrega_items(self,nom_fitxer):
-        raise NotImplemented    
+        raise NotImplementedError   
 
     def print_recomenacions(llista_recomenacions,k=5):
         for i in range(k):

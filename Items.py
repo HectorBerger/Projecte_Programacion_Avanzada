@@ -21,7 +21,7 @@ class Item(ABC):
 
     @abstractmethod
     def __str__(self):
-        raise NotImplemented
+        raise NotImplementedError
         
     
 class Movie(Item):
