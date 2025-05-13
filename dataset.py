@@ -21,7 +21,7 @@ class Dataset(ABC):
     _pos_users: Dict[str, int] #id_user : fila
     _pos_items: Dict[str, int] #id_item : columna
     _ratings: np.array 
-
+    _pmax: int
     _all_users: set
     _all_items: set
 
@@ -32,6 +32,7 @@ class Dataset(ABC):
         self._pos_items = dict()
         self._all_users = set()
         self._all_items = set()
+        self._pmax = int()
         self._ratings = self.carrega_ratings("") 
         print("LOADED") #log
         return True
@@ -52,11 +53,21 @@ class Dataset(ABC):
         for i in range(k):
             print(f"")#Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} "))
 
+    def set_pmax(self, puntuacio_maxima):
+        self._pmax = abs(int(puntuacio_maxima))
+
+    def get_pmax(self):
+        return self._pmax
+
     def get_ratings(self):
         return self._ratings
     
     def get_users(self):
-        return self._all_users     
+        return self._all_users   
+
+    def get_user_obj(self, id_user):
+        fila = self.get_row_user(id_user)
+        return self._users[fila]
     
     def get_row_user(self, id_user:str): #O "pos"?
         if id_user in self._pos_users.keys():
@@ -68,15 +79,24 @@ class Dataset(ABC):
             return self._pos_items[id_item]
         raise KeyError
     
-    def get_item(self, item_id: str):
+    def get_item_obj(self, item_id: str):
         col = self.get_col_item(item_id)
         return self._items[col]
+    
+    def get_item_id(self, pos_item):
+        if pos_item in self._items.keys():
+            return self._items[pos_item].get_id()
+        raise KeyError
 
+    @abstractmethod
+    def get_genres(self):
+        return NotImplementedError
 
 
 class DatasetMovies(Dataset):
     def __init__(self):
         super().__init__()
+        self.set_pmax(5)
 
     def carrega_ratings(self,nom_fitxer):
         #Recorrer para saber n i m (el shape de la array)
@@ -125,13 +145,19 @@ class DatasetMovies(Dataset):
                 movieid = row["movieId"]
                 titol = " ".join(row["title"].split(" ")[:-1])
                 any_movie = str(row["title"].split(" ")[-1].strip("()"))
-                generes = row["genres"].split('|')
+                generes = row["genres"]#.split('|')
                 self._items[i] = Movie(movieid, titol, any_movie, generes) 
                 self._pos_items[movieid] = i
 
                 movies.add(row["movieId"])
 
         return movies
+
+    def get_genres(self):
+        llista_generes = []
+        for item in self._items.values(): #insertion order (First in first out) meaning we are doing a for in the order of the columns 
+            llista_generes.append(item.get_genres())
+        return llista_generes
 
 
 class DatasetBooks(Dataset):
@@ -211,4 +237,6 @@ class DatasetBooks(Dataset):
         
         return books
 
+    def get_genres(self):
+        raise NotImplemented
 

@@ -8,7 +8,7 @@ from dataset import DatasetMovies, DatasetBooks
 
 def main():
     parser = argparse.ArgumentParser(description="Aplicar un algorisme de recomanació a un dataset per diferents usuaris a escollir.") #Hemos usado argparse para poder mostrar el help más fácilmente
-    parser.add_argument("dataset", choices=["MovieLens100k", "Books", ""], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'Amazon' per a recomanacions de productes Amazon.") #!#! default? 
+    parser.add_argument("dataset", choices=["MovieLens100k", "Books", "Amazon"], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'Amazon' per a recomanacions de productes Amazon.") #!#! default? 
     parser.add_argument("method", choices=["Simple", "Col·laboratiu", "BasatEnContingut"], help="Especifiqueu el algoritme de recomanació a utilitzar: 'Simple', 'Col·laboratiu' o 'BasatEnContingut'.")
  
     args = parser.parse_args()
@@ -22,6 +22,8 @@ def main():
                 d = DatasetMovies()
             case "Books":
                 d = DatasetBooks()
+            case "Amazon":
+                d = DatasetAmazon()
 
         match method:
             case "Simple":
@@ -49,9 +51,10 @@ def main():
         match accio:
             case "Recomenació":
                 #num_r = input("Entra el número de recomanacions a mostrar: ") 
-                r.recomenar(user_id,4)
-                r.imprimir_recomanacions(user_id)
-
+                if r.recomenar(user_id,4):
+                    r.imprimir_recomanacions(user_id)
+                else:
+                    print("")
             case "Avaluació":
                 print()#Mètriques (MAE,RMSE)
 
