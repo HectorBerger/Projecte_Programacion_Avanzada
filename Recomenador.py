@@ -1,4 +1,5 @@
 from dataset import Dataset
+from avaluadors import Avaluador
 import numpy as np
 import math
 import random
@@ -61,6 +62,15 @@ class Recomenador(ABC):
         all_vals = self._dataset.get_ratings()
         valid = all_vals[all_vals != -1]
         return np.mean(valid) if len(valid) > 0 else 0
+    
+    def test(self):
+        aval=Avaluador
+        valors_reals =
+        prediccions = 
+        aval.mae()
+        aval.rmse()
+
+
     
     
 class Simple(Recomenador):
