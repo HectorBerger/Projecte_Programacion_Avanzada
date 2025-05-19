@@ -87,6 +87,9 @@ class Dataset(ABC):
         if pos_item in self._items.keys():
             return self._items[pos_item].get_id()
         raise KeyError
+    
+    def get_items():
+        return self._all_items
 
     @abstractmethod
     def get_genres(self):

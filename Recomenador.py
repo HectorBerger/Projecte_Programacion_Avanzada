@@ -65,7 +65,7 @@ class Recomenador(ABC):
     
 class Simple(Recomenador):
     
-    def recomenar(self, user_id: str, min_vots: int = 3, num_r:int=5):
+    def recomenar(self, user_id: str, min_vots: int = 10, num_r:int=5):
         """Recomanació simple basada en la mitjana ponderada de les valoracions."""
         already_rated, ratings = super().recomenar(user_id,min_vots,num_r)
         if already_rated:
@@ -82,7 +82,7 @@ class Simple(Recomenador):
         llista_valoracions = [] #On guardarem totes les valoracions
 
         # Iterem per tots els ítems disponibles
-        for item_id, col in self._dataset._pos_items.items():
+        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar
             if user_ratings[col] == -1:
                 continue  # Ja l'ha valorat
 
