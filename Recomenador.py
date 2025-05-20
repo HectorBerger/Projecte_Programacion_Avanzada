@@ -63,14 +63,33 @@ class Recomenador(ABC):
         valid = all_vals[all_vals != -1]
         return np.mean(valid) if len(valid) > 0 else 0
     
-    def test(self):
-        aval=Avaluador
-        valors_reals =1
-        prediccions = 1
-        aval.mae()
-        aval.rmse()
+    def test(self, user_id):
 
+        self.recomenar(user_id)
 
+        pred, reals = [], []
+        fila = self._dataset.get_row_user(user_id)
+        ratings = self._dataset.get_ratings()[fila]
+
+        for item_id, prediccio in self._prediccions.get(user_id, []):
+            try:
+                col = self._dataset.get_col_item(item_id)
+                valor_real = ratings[fila, col]
+                if valor_real != -1:
+                    pred.append(prediccio)
+                    reals.append(valor_real)
+            except KeyError:
+                continue
+        
+        if not pred or not reals:
+            return None, None
+        
+        pred = np.array(pred)
+        reals = np.array(reals)
+        a = Avaluador()
+        mae = a.mae(pred, reals)
+        rmse = a.rmse(pred, reals)
+        return mae, rmse
     
     
 class Simple(Recomenador):
@@ -87,14 +106,13 @@ class Simple(Recomenador):
 
         user_row = self._dataset.get_row_user(user_id)
         user_ratings = ratings[user_row]
-
         avg_global = self.get_avg_global() 
+
         llista_valoracions = [] #On guardarem totes les valoracions
+        llista_prediccions = [] #On guardarem les prediccions
 
         # Iterem per tots els ítems disponibles
-        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar
-            if user_ratings[col] == -1:
-                continue  # Ja l'ha valorat
+        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar, el q??
 
             num_vots = self.get_num_vots(item_id)
             if num_vots < min_vots:
@@ -105,13 +123,19 @@ class Simple(Recomenador):
 
             # Calculem el score ponderat segons la fórmula
             score = (num_vots / (num_vots + min_vots)) * avg_item + \
-                    (min_vots / (num_vots + min_vots)) * avg_global            
-            
-            #Guardem un tuple a la llista de valoracions el score i el id del item
-            llista_valoracions.append((item_id, score))
+                    (min_vots / (num_vots + min_vots)) * avg_global   
+
+            llista_prediccions.append((item_id, score)) #Guardem totes les prediccions
+
+            if user_ratings[col] != -1:  # Si l'usuari ja ha valorat aquest ítem
+                llista_valoracions.append((item_id, score))
+
+        # Guardem les prediccions (per avaluar-les més tard)
+        self._prediccions[user_id] = llista_prediccions
 
         llista_valoracions = sorted(llista_valoracions, key=lambda x: x[1], reverse=True) #Ordenem segons el score de més gran a més petit
         self._recomanacions[user_id] = llista_valoracions[:num_r]
+
         return True
     
 class Colaboratiu(Recomenador):
