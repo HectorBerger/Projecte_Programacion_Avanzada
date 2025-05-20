@@ -1,5 +1,5 @@
 from dataset import Dataset
-from avaluadors import Avaluador
+from avaluador import Avaluador
 import numpy as np
 import math
 import random
@@ -65,8 +65,8 @@ class Recomenador(ABC):
     
     def test(self):
         aval=Avaluador
-        valors_reals =
-        prediccions = 
+        valors_reals =1
+        prediccions = 1
         aval.mae()
         aval.rmse()
 
@@ -206,7 +206,7 @@ class BasatEnContinguts(Recomenador):
         if denominator != 0:
             perfil = np.sum(np.reshape(user_row, (-1, 1)) * tfidf_matrix, axis=0) / denominator
         else:
-            raise ValueError("L'usuari no ha valorat a ningú o tot són zeros")
+            raise ValueError("L'usuari no ha valorat a ningú")
         
         #3
         S = np.dot(tfidf_matrix, perfil.T)
@@ -219,7 +219,7 @@ class BasatEnContinguts(Recomenador):
         posicions_no_valorades = np.where(mask)[0]  # índexs reals al dataset
 
         for idx in posicions_no_valorades:
-            score = pfinal[idx]
+            score = pfinal[idx] #ERROR
             llista_recomenacions.append( (self._dataset.get_item_id(idx), score) )
 
 

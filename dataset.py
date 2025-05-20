@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from user import User
 import csv
 import numpy as np
+import json
 
 
 #Provisional hasta decidir que hacer: #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
@@ -88,7 +89,7 @@ class Dataset(ABC):
             return self._items[pos_item].get_id()
         raise KeyError
     
-    def get_items():
+    def get_items(self):
         return self._all_items
 
     @abstractmethod
@@ -121,6 +122,9 @@ class DatasetMovies(Dataset):
                     ratings[self._pos_users[user_id], self._pos_items[movie_id]] = row["rating"]
                 else:
                     print(f"User or movie not found: userId={user_id}, movieId={movie_id}") #DEBUG
+        
+        
+        print('Maximum value in arr:', np.max(ratings))
 
         return ratings
                 
@@ -243,3 +247,23 @@ class DatasetBooks(Dataset):
     def get_genres(self):
         raise NotImplemented
 
+
+
+class DatasetMusic(Dataset):
+    def __init__(self):
+        super().__init__()
+
+    def carrega_ratings(self,nom_fitxer):
+        with open("archivo.json", "r") as f:
+            datos = json.load(f)
+
+    def carrega_users(self,nom_fitxer):
+        with open("archivo.json", "r") as f:
+            datos = json.load(f)
+
+    def carrega_items(self,nom_fitxer):
+        with open("archivo.json", "r") as f:
+            datos = json.load(f)
+            
+    def get_genres(self):
+        raise NotImplemented
