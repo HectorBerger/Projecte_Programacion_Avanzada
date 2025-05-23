@@ -3,7 +3,7 @@ import pickle
 import argparse
 import os.path
 import logging
-from recomenador import Simple, Colaboratiu, BasatEnContinguts 
+from recomenador_vFinal import Simple, Colaboratiu, BasatEnContinguts 
 from dataset import DatasetMovies, DatasetBooks
 
 def main():

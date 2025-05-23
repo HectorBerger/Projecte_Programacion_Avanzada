@@ -15,6 +15,8 @@ NOM_FITXER_BOOKS = "dataset/Books/Books.csv"
 NOM_FITXER_RATING_BOOKS = "dataset/Books/Ratings.csv" 
 NOM_FITXER_BOOKS_USERS = "dataset/Books/Users.csv"
 
+NOM_FITXER_RATINGS_MUSIC = "dataset\\Digital_Music_5.json\\Digital_Music_5.json"
+
 
 class Dataset(ABC):
     _users: Dict[int , User] # fila : User
@@ -109,8 +111,8 @@ class DatasetMovies(Dataset):
         self._all_users = self.carrega_users("nom_fitxer") 
 
         #Crear array y llenarla
-        number_of_users = len(self._all_users)
-        number_of_items = len(self._all_items)
+        number_of_users = len(self._all_users) #n files
+        number_of_items = len(self._all_items) #m columnes
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.float16) )#Hemos escogido este tipo ya que necesariamente tiene que ser float porqué tenemos ratings con coma y 16 bits porqué es el más pequeño que entra nuestro máximo
         with open(NOM_FITXER_RATINGS_MOVIES, 'r', encoding="utf-8") as csvfile:   
             dict_reader = csv.DictReader(csvfile, delimiter=',')
@@ -129,7 +131,7 @@ class DatasetMovies(Dataset):
         return ratings
                 
 
-    def carrega_users(self,nom_fitxer):
+    def carrega_users(self,nom_fitxer) -> set:
         users = set()
 
         with open(NOM_FITXER_RATINGS_MOVIES, 'r', encoding="utf-8") as csvfile:   
@@ -143,7 +145,7 @@ class DatasetMovies(Dataset):
 
         return users
     
-    def carrega_items(self,nom_fitxer):
+    def carrega_items(self,nom_fitxer) -> set:
         movies = set()
 
         with open(NOM_FITXER_MOVIES, 'r', encoding="utf-8") as csvfile:   
@@ -180,8 +182,8 @@ class DatasetBooks(Dataset):
         self._all_users = self.carrega_users("nom_fitxer")
 
         #Crear array y llenarla
-        number_of_users = len(self._all_users)
-        number_of_items = len(self._all_items)
+        number_of_users = len(self._all_users) #n files
+        number_of_items = len(self._all_items) #m columnes
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
@@ -195,7 +197,7 @@ class DatasetBooks(Dataset):
         return ratings
 
 
-    def carrega_users(self,nom_fitxer):
+    def carrega_users(self,nom_fitxer) -> set:
         temp_users = dict()
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:   
             bookreader = csv.DictReader(csvfile, delimiter=',')
@@ -223,7 +225,7 @@ class DatasetBooks(Dataset):
         return users
     
 
-    def carrega_items(self,nom_fitxer):
+    def carrega_items(self,nom_fitxer) -> set:
         books = set()
 
         with open(NOM_FITXER_BOOKS, 'r', encoding="utf-8") as csvfile:   
@@ -248,22 +250,61 @@ class DatasetBooks(Dataset):
         raise NotImplemented
 
 
+import gzip
 
 class DatasetMusic(Dataset):
     def __init__(self):
         super().__init__()
 
+    def parse(path):
+        g = gzip.open(path, 'r')
+        for l in g:
+            yield json.loads(l)
+
     def carrega_ratings(self,nom_fitxer):
-        with open("archivo.json", "r") as f:
-            datos = json.load(f)
+        #Recorrer para saber n i m 
+        #Carregar els primer 10,000 books i els usuaris més adhients 
+        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
+        self._all_users = self.carrega_users("nom_fitxer")
 
-    def carrega_users(self,nom_fitxer):
-        with open("archivo.json", "r") as f:
-            datos = json.load(f)
+        #Crear array y llenarla
+        number_of_users = len(self._all_users) #n files
+        number_of_items = len(self._all_items) #m columnes
+        ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
+        with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
+            dict_reader = csv.DictReader(csvfile, delimiter=',')
+            for row in dict_reader:
+                user_id = row["User-ID"]
+                isbn = row["ISBN"]
 
-    def carrega_items(self,nom_fitxer):
-        with open("archivo.json", "r") as f:
+                if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
+                    ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
+
+        return ratings
+    
+        with open(NOM_FITXER_RATINGS_MUSIC, "r") as f:
             datos = json.load(f)
             
+    
+    def carrega_users(self,nom_fitxer) -> set:
+        users = set()
+
+        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_MUSIC):
+            user_id = data.get("reviewerID")
+            if user_id:
+                users.add(user_id)
+
+        return users
+
+    def carrega_items(self,nom_fitxer) -> set:
+        music = set()
+
+        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_MUSIC):
+            item_id = data.get("")
+            if item_id:
+                music.add(item_id)
+
+        return music
+    
     def get_genres(self):
         raise NotImplemented
