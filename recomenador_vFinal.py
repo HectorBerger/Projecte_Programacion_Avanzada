@@ -29,15 +29,16 @@ class Recomenador(ABC):
             print(f"Usuari {user_id} no trobat.")
             return False
         
-        if user_id in self._recomanacions:
-            print(f"Usuari {user_id} ja recomenat.")
-            return True 
+        if user_id in self._recomanacions and user_id in self._prediccions:
+            print(f"Prediccions i recomanacions ja fetes per {user_id}.")
+            return True
         
         ratings = self._dataset.get_ratings()
         llista_recomenacions = []
+        llista_prediccions = []
         
-        min_vots = int(input("Introdueix el parametre vots mínims: "))
-        self.algoritme(ratings, user_id, llista_recomenacions, min_vots)
+        min_vots = int(input("Introdueix el parametre vots mínims: ")) #no deberia ser algo mas generico para todos los algoritmos?
+        self.algoritme(ratings, user_id, llista_recomenacions, llista_prediccions, min_vots)
 
         """
         match algoritme:
@@ -54,6 +55,7 @@ class Recomenador(ABC):
         # Sort the scores and return the top 5 (or num_r) recommendations
         llista_recomenacions = sorted(llista_recomenacions, key=lambda x: x[1], reverse=True )
         self._recomanacions[user_id] = llista_recomenacions[:num_r]
+        self._prediccions[user_id] = llista_prediccions
 
         return True
     
@@ -124,7 +126,7 @@ class Recomenador(ABC):
     
 class Simple(Recomenador):
     
-    def algoritme(self, ratings, user_id: str, llista_valoracions: list, min_vots: int = 10) -> bool:
+    def algoritme(self, ratings, user_id: str, llista_valoracions: list, llista_prediccions: list, min_vots: int = 10) -> bool:
         """Recomanació simple basada en la mitjana ponderada de les valoracions."""
 
         user_row = self._dataset.get_row_user(user_id)
@@ -133,10 +135,7 @@ class Simple(Recomenador):
         avg_global = self.get_avg_global() 
 
         # Iterem per tots els ítems disponibles
-        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar
-            if user_ratings[col] == -1:
-                continue  # Ja l'ha valorat
-
+        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar el q??
             num_vots = self.get_num_vots(item_id)
             if num_vots < min_vots:
                 continue  # No prou fiable
@@ -148,21 +147,24 @@ class Simple(Recomenador):
             score = (num_vots / (num_vots + min_vots)) * avg_item + \
                     (min_vots / (num_vots + min_vots)) * avg_global            
             
+            llista_prediccions.append((item_id, score)) #Guardem predicció
+
             #Guardem un tuple a la llista de valoracions el score i el id del item
-            llista_valoracions.append((item_id, score))
+            if user_ratings[col] == -1:  # Només considerem ítems no valorats per l'usuari
+                llista_valoracions.append((item_id, score))
 
         return True
     
 class Colaboratiu(Recomenador):
 
-    def algoritme(self, user_id: str, array_ratings, llista_recomenacions, k: int):
+    def algoritme(self, user_id: str, array_ratings, llista_recomenacions, llista_prediccions, k: int):
         """Recomanació col·laborativa basada en la similitud entre usuaris."""
         
         user_pos = self._dataset.get_row_user(user_id)
         user_row = array_ratings[user_pos]
         llista_similitud = []
 
-        #1
+        #1 Calcular similituds
         for i,row in enumerate(array_ratings): #i = numero de fila del veï 
             if user_pos != i:
                 mask = (user_row != -1) & (row != -1)
@@ -178,10 +180,10 @@ class Colaboratiu(Recomenador):
                 else:
                     similitud = 0
 
-                llista_similitud.append( (i,similitud) )
+                llista_similitud.append((i, similitud))
 
 
-        #2
+        #2 Seleccionar els k veins més similars
         llista_similitud = sorted(llista_similitud, key=lambda x: x[1], reverse=True)[:k] #Ordenem segons el score de més gran a més petit
 
         # Step 3: Calculate scores for items not rated by the user
@@ -193,31 +195,33 @@ class Colaboratiu(Recomenador):
         columna_similitud = np.column_stack(np.array([sim[1] for sim in llista_similitud])) # Similarities with top-k veins
 
         for item_id, col in self._dataset._pos_items.items(): #S'ha d'iterar per items no vists per l'user (columnes)
-            if user_row[col] == -1:  # Only consider items not rated by the user
-                veins_col = np.column_stack(veins_arrays[:, col])  # Ratings of the current item by all neighbors
+            veins_col = np.column_stack(veins_arrays[:, col])  # Ratings of the current item by all neighbors
 
-                # Mask for neighbors who rated the item
-                veins_mask = veins_col != -1
+            # Mask for neighbors who rated the item
+            veins_mask = veins_col != -1
 
-                # Calculate the numerator and denominator
-                numerator = np.sum( columna_similitud[veins_mask] * (veins_col[veins_mask] - mitjas_veins[veins_mask]) )
-                denominator = np.sum(np.abs(columna_similitud[veins_mask]))
+            # Calculate the numerator and denominator
+            numerator = np.sum( columna_similitud[veins_mask] * (veins_col[veins_mask] - mitjas_veins[veins_mask]) )
+            denominator = np.sum(np.abs(columna_similitud[veins_mask]))
 
-                # Calculate the final score
-                if denominator != 0:
-                    score = mitja_user + numerator / denominator
-                else:
-                    score = mitja_user  # Default to the user's mean if no neighbors rated the item
+            # Calculate the final score
+            if denominator != 0:
+                score = mitja_user + numerator / denominator
+            else:
+                score = mitja_user  # Default to the user's mean if no neighbors rated the item
                 
-                llista_recomenacions.append((item_id, score)) # Append the score and item ID
+            llista_prediccions.append((item_id, score)) # Guardem predicció
 
-        return True 
+            if user_row[col] == -1:  # Només considerem ítems no valorats per l'usuari
+                llista_recomenacions.append((item_id, score)) # Guardem recomanació
+
+        return True
 
 
 
 class BasatEnContinguts(Recomenador):
     
-    def algoritme(self, array_ratings, user_id, llista_recomenacions, arg2): 
+    def algoritme(self, array_ratings, user_id, llista_recomenacions, llista_prediccions, arg2): 
         #1
         item_features = self._dataset.get_genres()
         tfidf = TfidfVectorizer(stop_words='english')
@@ -237,14 +241,20 @@ class BasatEnContinguts(Recomenador):
         
         #4
         PMAX = 5 # La puntuació máxima en el cas de Movies 
-        pfinal = S * PMAX #podriamos poner un atributo
+        pfinal = S * PMAX #podriamos poner un atributo, si pero como solo es para esto igual esta bien asi
 
-        mask = user_row == -1
+        """mask = user_row == -1
         posicions_no_valorades = np.where(mask)[0]  # índexs reals al dataset
 
         for idx in posicions_no_valorades:
             score = pfinal[idx] #ERROR
-            llista_recomenacions.append( (self._dataset.get_item_id(idx), score) )
+            llista_recomenacions.append( (self._dataset.get_item_id(idx), score))"""
+
+        for idx, item_id in enumerate(self._dataset.get_items()):
+            score = pfinal[idx]
+            llista_prediccions.append((item_id, score))
+            if user_row[idx] == -1:
+                llista_recomenacions.append((item_id, score))
 
         return True
 
