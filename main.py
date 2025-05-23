@@ -55,8 +55,18 @@ def main():
                     r.imprimir_recomanacions(user_id)
                 else:
                     print("")
+                    
             case "Avaluació":
-                print()#Mètriques (MAE,RMSE)
+                resultat = r.test(user_id)
+
+                if resultat is None or resultat == (None, None):
+                    print("No s'han pogut calcular les mètriques. L'usuari potser no té valoracions reals.")
+                else:
+                    mae, rmse = resultat
+                    print(f"\nResultats d'avaluació per l'usuari {user_id}:")
+                    print(f"  MAE  (Mean Absolute Error):     {mae:.3f}")
+                    print(f"  RMSE (Root Mean Squared Error): {rmse:.3f}")
+
 
             case "Sortir":
                 print("Sortint...\n")

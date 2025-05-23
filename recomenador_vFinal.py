@@ -24,7 +24,7 @@ class Recomenador(ABC):
     def sample_users(self, k=5):
         return random.sample(list(self._dataset.get_users()), k)
 
-    def recomenar(self, user_id: str, k: int, num_r: int = 5):
+    def recomenar(self, user_id: str, num_r: int = 5):
         if not self.has_user(user_id):
             print(f"Usuari {user_id} no trobat.")
             return False
@@ -106,7 +106,7 @@ class Recomenador(ABC):
         for item_id, prediccio in self._prediccions.get(user_id, []):
             try:
                 col = self._dataset.get_col_item(item_id)
-                valor_real = ratings[fila, col]
+                valor_real = ratings[col]
                 if valor_real != -1:
                     pred.append(prediccio)
                     reals.append(valor_real)
@@ -157,7 +157,7 @@ class Simple(Recomenador):
     
 class Colaboratiu(Recomenador):
 
-    def algoritme(self, user_id: str, array_ratings, llista_recomenacions, llista_prediccions, k: int):
+    def algoritme(self, array_ratings, user_id: str, llista_recomenacions, llista_prediccions, k: int):
         """Recomanació col·laborativa basada en la similitud entre usuaris."""
         
         user_pos = self._dataset.get_row_user(user_id)
