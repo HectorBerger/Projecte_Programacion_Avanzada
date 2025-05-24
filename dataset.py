@@ -12,10 +12,12 @@ NOM_FITXER_MOVIES = "dataset\\MovieLens100k\\movies.csv"
 NOM_FITXER_RATINGS_MOVIES = "dataset\\MovieLens100k\\ratings.csv"
 
 NOM_FITXER_BOOKS = "dataset/Books/Books.csv"
-NOM_FITXER_RATING_BOOKS = "dataset/Books/Ratings.csv" 
 NOM_FITXER_BOOKS_USERS = "dataset/Books/Users.csv"
+NOM_FITXER_RATING_BOOKS = "dataset/Books/Ratings.csv" 
 
-NOM_FITXER_RATINGS_MUSIC = "dataset\\Digital_Music_5.json\\Digital_Music_5.json"
+NOM_FITXER_ = ""
+NOM_FITXER_RATINGS_ = "dataset\\Amazon\\Digital_Music_5.json"
+
 
 
 class Dataset(ABC):
@@ -90,17 +92,13 @@ class Dataset(ABC):
             return self._items[pos_item].get_id()
         raise KeyError
     
-    
-
-    @abstractmethod
     def get_genres(self):
-        return NotImplementedError
+        raise NotImplementedError
 
 
 class DatasetMovies(Dataset):
     def __init__(self):
         super().__init__()
-        self.set_pmax(5)
 
     def carrega_ratings(self,nom_fitxer):
         #Recorrer para saber n i m (el shape de la array)
@@ -123,8 +121,7 @@ class DatasetMovies(Dataset):
                 else:
                     print(f"User or movie not found: userId={user_id}, movieId={movie_id}") #DEBUG
         
-        
-        print('Maximum value in arr:', np.max(ratings))
+        self.set_pmax(np.max(ratings))
 
         return ratings
                 
@@ -244,10 +241,6 @@ class DatasetBooks(Dataset):
         
         return books
 
-    def get_genres(self):
-        raise NotImplemented
-
-
 import gzip
 
 class DatasetMusic(Dataset):
@@ -269,6 +262,9 @@ class DatasetMusic(Dataset):
         number_of_users = len(self._all_users) #n files
         number_of_items = len(self._all_items) #m columnes
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
+        for i, obj in enumerate(self.parse(NOM_FITXER_RATING_BOOKS)):
+
+            """
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
@@ -277,11 +273,8 @@ class DatasetMusic(Dataset):
 
                 if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
                     ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
-
+            """
         return ratings
-    
-        with open(NOM_FITXER_RATINGS_MUSIC, "r") as f:
-            datos = json.load(f)
             
     
     def carrega_users(self,nom_fitxer) -> set:
@@ -306,3 +299,4 @@ class DatasetMusic(Dataset):
     
     def get_genres(self):
         raise NotImplemented
+

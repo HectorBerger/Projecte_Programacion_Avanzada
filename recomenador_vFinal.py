@@ -42,7 +42,9 @@ class Recomenador(ABC):
         llista_prediccions = []
         
         min_vots = int(input("Introdueix el parametre vots mínims: ")) #no deberia ser algo mas generico para todos los algoritmos?
-        self.algoritme(ratings, user_row, llista_prediccions, min_vots)
+        if not self.algoritme(ratings, user_row, llista_prediccions, min_vots):
+            print("No es pot utilitzar l'algoritme basat en continguts amb el dataset Books ja que els items manquen els generes o categories.")
+            return False
 
         """
         match algoritme:
@@ -225,8 +227,13 @@ class Colaboratiu(Recomenador):
 class BasatEnContinguts(Recomenador):
     
     def algoritme(self, array_ratings:np.ndarray, user_row:np.ndarray, llista_prediccions:list, arg2): 
+
         #1
-        item_features = self._dataset.get_genres()
+        try:
+            item_features = self._dataset.get_genres()
+        except:
+            return False
+        
         tfidf = TfidfVectorizer(stop_words='english')
         tfidf_matrix = tfidf.fit_transform(item_features).toarray()
 
@@ -244,16 +251,12 @@ class BasatEnContinguts(Recomenador):
         PMAX = 5 # La puntuació máxima en el cas de Movies 
         pfinal = S * PMAX #podriamos poner un atributo, si pero como solo es para esto igual esta bien asi
 
-        """mask = user_row == -1
+        mask = user_row == -1
         posicions_no_valorades = np.where(mask)[0]  # índexs reals al dataset
 
         for idx in posicions_no_valorades:
             score = pfinal[idx] #ERROR
-            llista_recomenacions.append( (self._dataset.get_item_id(idx), score))"""
-
-        for idx, item_id in enumerate(self._dataset.get_items()):
-            score = pfinal[idx]
-            llista_prediccions.append((item_id, score))
+            llista_prediccions.append( (self._dataset.get_item_id(idx), score))
 
         return True
 
