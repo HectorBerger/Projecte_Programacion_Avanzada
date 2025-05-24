@@ -6,7 +6,7 @@ import math
 import random
 from abc import ABC, abstractmethod
 
-
+#!#!#! Nos quedamos con este no????
 class Recomenador(ABC):
     """
     Classe abstracta que defineix la interfície comuna per a diferents
@@ -17,6 +17,7 @@ class Recomenador(ABC):
         self._dataset = dataset
         self._recomanacions = dict()
         self._prediccions = dict()
+        self._avaluacions = dict()
 
     def has_user(self, user_id: str):
         return user_id in self._dataset.get_users()
@@ -34,11 +35,14 @@ class Recomenador(ABC):
             return True
         
         ratings = self._dataset.get_ratings()
-        llista_recomenacions = []
+
+        user_pos = self._dataset.get_row_user(user_id)
+        user_row = ratings[user_pos]
+
         llista_prediccions = []
         
         min_vots = int(input("Introdueix el parametre vots mínims: ")) #no deberia ser algo mas generico para todos los algoritmos?
-        self.algoritme(ratings, user_id, llista_recomenacions, llista_prediccions, min_vots)
+        self.algoritme(ratings, user_row, llista_prediccions, min_vots)
 
         """
         match algoritme:
@@ -50,8 +54,16 @@ class Recomenador(ABC):
                 self.recom_colaborativa(ratings, user_id,llista_recomenacions, k)
             case "Contingut":
                 self.recom_basat_en_continguts(ratings, user_id, llista_recomenacions, 0)
-        """
+        """        
+
+        # Només guardem les tuples prediccio a la llista de recomenacions pertinents
+        llista_recomenacions = []
+        for prediccio in llista_prediccions.copy():
+            if user_row[ self._dataset.get_col_item(prediccio[0]) ] == -1: #prediccio = tuple(id_item, score) per tant mirem que l'item no hagi estat valorat per l'usuari   
+                llista_recomenacions.append(prediccio)
+                llista_prediccions.remove(prediccio)
                 
+        
         # Sort the scores and return the top 5 (or num_r) recommendations
         llista_recomenacions = sorted(llista_recomenacions, key=lambda x: x[1], reverse=True )
         self._recomanacions[user_id] = llista_recomenacions[:num_r]
@@ -60,11 +72,10 @@ class Recomenador(ABC):
         return True
     
     @abstractmethod
-    def algoritme(self,ratings, user_id, llista_recomenacions, arg):
+    def algoritme(self, ratings:np.ndarray, user_row:np.ndarray, llista_prediccions:list, arg:int):
         raise NotImplementedError 
 
-    
-    def imprimir_recomanacions(self, user_id: str, num_r: int = 5):
+    def imprimir_recomanacions(self, user_id: str):
         """Imprimeix les recomanacions per a un usuari donat."""
         if not user_id in self._recomanacions:
             print(f"No hi ha recomanacions disponibles per a l'usuari {user_id}.")
@@ -74,7 +85,7 @@ class Recomenador(ABC):
             print(f"Recomanació per a l'{user}:")
             for i, tupla in enumerate(self._recomanacions[user_id]): #tupla = item_id, score
                 item = self._dataset.get_item_obj(tupla[0])
-                print(f" {i}: {item} amb score {tupla[1]:.1f}")
+                print(f" {i+1}: {item} amb predicted score {tupla[1]:.3f}")
             return True
     
     def get_num_vots(self, item_id: str):
@@ -96,48 +107,47 @@ class Recomenador(ABC):
         return np.mean(valid) if len(valid) > 0 else 0
     
     def test(self, user_id):
-
-        self.recomenar(user_id)
-
-        pred, reals = [], []
-        fila = self._dataset.get_row_user(user_id)
-        ratings = self._dataset.get_ratings()[fila]
-
-        for item_id, prediccio in self._prediccions.get(user_id, []):
-            try:
-                col = self._dataset.get_col_item(item_id)
-                valor_real = ratings[col]
-                if valor_real != -1:
-                    pred.append(prediccio)
-                    reals.append(valor_real)
-            except KeyError:
-                continue
         
-        if not pred or not reals:
-            return None, None
-        
-        pred = np.array(pred)
-        reals = np.array(reals)
-        a = Avaluador()
-        mae = a.mae(pred, reals)
-        rmse = a.rmse(pred, reals)
-        return mae, rmse
-    
+        if not user_id in self._avaluacions:
+            if self.recomenar(user_id):
+                
+                pred =  []
+                reals = []
+
+                user_pos = self._dataset.get_row_user(user_id)
+                user_row = self._dataset.get_ratings()[user_pos]
+
+                for item_id, score_pred in self._prediccions.get(user_id, []):
+                    try:
+                        col = self._dataset.get_col_item(item_id)
+                        valor_real = user_row[col]
+                        if valor_real != -1:
+                            pred.append(score_pred)
+                            reals.append(valor_real)
+                    except KeyError:
+                        continue
+                
+                a = Avaluador(user_id)
+                a.mae(pred, reals)
+                a.rmse(pred, reals)
+                self._avaluacions[user_id] = a
+            else:
+                return "Error al fer les prediccions."
+
+        return self._avaluacions[user_id]
     
 class Simple(Recomenador):
     
-    def algoritme(self, ratings, user_id: str, llista_valoracions: list, llista_prediccions: list, min_vots: int = 10) -> bool:
+    def algoritme(self, ratings:np.ndarray, user_row:np.ndarray, llista_prediccions:list, min_vots:int = 10) -> bool:
         """Recomanació simple basada en la mitjana ponderada de les valoracions."""
-
-        user_row = self._dataset.get_row_user(user_id)
-        user_ratings = ratings[user_row]
 
         avg_global = self.get_avg_global() 
 
         # Iterem per tots els ítems disponibles
-        for item_id, col in self._dataset._pos_items.items(): #!#!# hay q cambiar el q??
+        for item_id in self._dataset.get_items(): #!#!# Respuesta: ya lo he cambiado yo, había aque crear un getter 
             num_vots = self.get_num_vots(item_id)
             if num_vots < min_vots:
+            
                 continue  # No prou fiable
 
             # Calculem la mitjana d’aquest ítem 
@@ -147,26 +157,20 @@ class Simple(Recomenador):
             score = (num_vots / (num_vots + min_vots)) * avg_item + \
                     (min_vots / (num_vots + min_vots)) * avg_global            
             
-            llista_prediccions.append((item_id, score)) #Guardem predicció
-
-            #Guardem un tuple a la llista de valoracions el score i el id del item
-            if user_ratings[col] == -1:  # Només considerem ítems no valorats per l'usuari
-                llista_valoracions.append((item_id, score))
+            llista_prediccions.append( (item_id, score) ) #Guardem predicció
 
         return True
     
 class Colaboratiu(Recomenador):
 
-    def algoritme(self, array_ratings, user_id: str, llista_recomenacions, llista_prediccions, k: int):
+    def algoritme(self, array_ratings:np.ndarray, user_row:np.ndarray, llista_prediccions:list, k:int):
         """Recomanació col·laborativa basada en la similitud entre usuaris."""
         
-        user_pos = self._dataset.get_row_user(user_id)
-        user_row = array_ratings[user_pos]
         llista_similitud = []
 
         #1 Calcular similituds
         for i,row in enumerate(array_ratings): #i = numero de fila del veï 
-            if user_pos != i:
+            if not np.array_equal(row, user_row):
                 mask = (user_row != -1) & (row != -1)
                 if np.any(mask):
                     denominator = (
@@ -181,7 +185,9 @@ class Colaboratiu(Recomenador):
                     similitud = 0
 
                 llista_similitud.append((i, similitud))
-
+        
+        if not llista_similitud:
+            return False
 
         #2 Seleccionar els k veins més similars
         llista_similitud = sorted(llista_similitud, key=lambda x: x[1], reverse=True)[:k] #Ordenem segons el score de més gran a més petit
@@ -212,24 +218,19 @@ class Colaboratiu(Recomenador):
                 
             llista_prediccions.append((item_id, score)) # Guardem predicció
 
-            if user_row[col] == -1:  # Només considerem ítems no valorats per l'usuari
-                llista_recomenacions.append((item_id, score)) # Guardem recomanació
-
         return True
 
 
 
 class BasatEnContinguts(Recomenador):
     
-    def algoritme(self, array_ratings, user_id, llista_recomenacions, llista_prediccions, arg2): 
+    def algoritme(self, array_ratings:np.ndarray, user_row:np.ndarray, llista_prediccions:list, arg2): 
         #1
         item_features = self._dataset.get_genres()
         tfidf = TfidfVectorizer(stop_words='english')
         tfidf_matrix = tfidf.fit_transform(item_features).toarray()
 
         #2
-        user_pos = self._dataset.get_row_user(user_id)
-        user_row = array_ratings[user_pos]
         denominator = np.sum(user_row)
         if denominator != 0:
             perfil = np.sum(np.reshape(user_row, (-1, 1)) * tfidf_matrix, axis=0) / denominator
@@ -253,8 +254,6 @@ class BasatEnContinguts(Recomenador):
         for idx, item_id in enumerate(self._dataset.get_items()):
             score = pfinal[idx]
             llista_prediccions.append((item_id, score))
-            if user_row[idx] == -1:
-                llista_recomenacions.append((item_id, score))
 
         return True
 

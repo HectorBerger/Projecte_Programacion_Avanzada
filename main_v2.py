@@ -1,3 +1,6 @@
+"""
+Yo me quedaría con el main que ya teniamos hecho
+
 #Projecte
 import pickle
 import argparse
@@ -65,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+"""

@@ -52,10 +52,6 @@ class Dataset(ABC):
     def carrega_items(self,nom_fitxer):
         raise NotImplementedError   
 
-    def print_recomenacions(llista_recomenacions,k=5):
-        for i in range(k):
-            print(f"")#Recomanació per a l'usuari {usuari}: {recom._dataset._items[recom._dataset._pos_items[recomanacio[0][1]]]} amb score {round(recomanacio[0][0], 1)} "))
-
     def set_pmax(self, puntuacio_maxima):
         self._pmax = abs(int(puntuacio_maxima))
 
@@ -67,15 +63,18 @@ class Dataset(ABC):
     
     def get_users(self):
         return self._all_users   
-
-    def get_user_obj(self, id_user):
-        fila = self.get_row_user(id_user)
-        return self._users[fila]
     
     def get_row_user(self, id_user:str): #O "pos"?
         if id_user in self._pos_users.keys():
             return self._pos_users[id_user]
         raise ValueError
+
+    def get_user_obj(self, id_user):
+        fila = self.get_row_user(id_user)
+        return self._users[fila]
+    
+    def get_items(self):
+        return self._all_items
     
     def get_col_item(self, id_item:str):
         if id_item in self._pos_items.keys():
@@ -91,8 +90,7 @@ class Dataset(ABC):
             return self._items[pos_item].get_id()
         raise KeyError
     
-    def get_items(self):
-        return self._all_items
+    
 
     @abstractmethod
     def get_genres(self):
