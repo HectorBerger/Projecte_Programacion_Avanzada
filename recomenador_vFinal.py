@@ -65,6 +65,7 @@ class Recomenador(ABC):
 
     def imprimir_recomanacions(self, user_id: str) -> bool:
         """Imprimeix les recomanacions per a un usuari donat."""
+        
         if not user_id in self._recomanacions:
             print(f"No hi ha recomanacions disponibles per a l'usuari {user_id}.")
             return False

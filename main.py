@@ -42,7 +42,7 @@ def main():
 
         while not r.has_user(user_id): # Comprovar si existeix
             mostra = ", ".join(r.sample_users())
-            user_id = input(f"ID no existent (alguns possibles IDs [{mostra}]):")
+            user_id = input(f"ID no existent (alguns possibles IDs [{mostra}]): ")
             
         accio = input("Introdueix una acció (R -> Recomenació / A -> Avaluació / S -> Sortir): ")
         match accio:

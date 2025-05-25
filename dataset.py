@@ -6,7 +6,6 @@ import csv, json
 import numpy as np
 from toolkit import timer
 
-#Provisional hasta decidir que hacer: #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
 NOM_FITXER_MOVIES = "dataset\\MovieLens100k\\movies.csv"
 NOM_FITXER_RATINGS_MOVIES = "dataset\\MovieLens100k\\ratings.csv"
 
@@ -16,7 +15,6 @@ NOM_FITXER_RATING_BOOKS = "dataset\\Books\\Ratings.csv"
 
 NOM_FITXER_VIDEOGAMES_METADATA = "dataset\\VideoGames\\meta_Video_Games.json.gz"
 NOM_FITXER_RATINGS_VIDEOGAMES = "dataset\\VideoGames\\Video_Games_5.json.gz"
-
 
 
 class Dataset(ABC):
@@ -274,12 +272,28 @@ class DatasetBooks(Dataset):
         return books
 
 
-import gzip
+import gzip,re
 from scipy.sparse import lil_matrix
 def parse(path):
         g = gzip.open(path, 'r')
         for l in g:
             yield json.loads(l)
+
+def clean_price(price):
+    if not price or isinstance(price, list):
+        return None
+    # Si es un string con símbolos de dólar, quítalos y quédate con el número
+    if isinstance(price, str):
+        # Busca el primer número en el string
+        match = re.search(r'(\d+(\.\d+)?)', price.replace(',', ''))
+        if match:
+            return float(match.group(1))
+        else:
+            return None
+    try:
+        return float(price)
+    except Exception:
+        return None
 
 class DatasetVideoGames(Dataset):
     def __init__(self):
@@ -352,19 +366,28 @@ class DatasetVideoGames(Dataset):
             if categories:
                 try:
                     item_id = obj.get('asin')
+                    if item_id in self._pos_items:
+                        raise ValueError("Objeto ya creado")
                     titol = obj.get('title')
                     brand = obj.get('brand')
-                    price = obj.get('price')
+                    price = clean_price(obj.get('price'))
                     description = obj.get('description')
-                    if not item_id or not titol or not price:
+                    if isinstance(description, list):
+                        description = " ".join(str(x).strip() for x in description if x)
+                    elif description is None:
+                        description = ""
+                    else:
+                        description = str(description)
+                    if not item_id or not titol:
                         raise ValueError(f"Missing required field(s) for VideoGame {item_id}")
                     self._items[i] = VideoGame(item_id, titol, categories, price, brand, description)
+                    self._pos_items[item_id] = i
                 except Exception:
                     continue
 
                 video_games.add(item_id)
                 i += 1
-                #if i==10000:
+                #if i==10000:  #Treure els comentaris si va molt lent
                 #    break
 
         return video_games

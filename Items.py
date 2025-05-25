@@ -74,7 +74,17 @@ class VideoGame(Item):
 
     def __init__(self, asin:str, titol:str, categories:list, price:str, brand:str="Unknown", description:str="..."):
         try:
-            self._categories = categories
+            if isinstance(categories, list):
+                # Si hay listas anidadas, aplánalas
+                flat_categories = []
+                for cat in categories:
+                    if isinstance(cat, list):
+                        flat_categories.extend(str(x) for x in cat)
+                    else:
+                        flat_categories.append(str(cat))
+                self._categories = flat_categories
+            else:
+                self._categories = [str(categories)]
             self._brand = brand
             self._price = price
             self._description = description
@@ -83,7 +93,7 @@ class VideoGame(Item):
             raise ValueError(f"Error al inicialitzar les dades del objecte VideoGame {asin}")
 
     def __str__(self):
-        return f"{self._title}, Preu: {self._price}. Categories: {self._categories} [ID: {self._id}] Descripció: {self._description}"
+        return f"{self._title}, Preu: {'No disponible' if self._price is None else f'${self._price:.2f}'}. Categories: {self._categories} [ID: {self._id}] Descripció: {self._description[:20]}..."
 
     def get_genres(self):
         return self._categories 
