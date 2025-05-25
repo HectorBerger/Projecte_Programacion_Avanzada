@@ -75,16 +75,10 @@ class VideoGame(Item):
     def __init__(self, asin:str, titol:str, categories:list, price:str, brand:str="Unknown", description:str="..."):
         try:
             if isinstance(categories, list):
-                # Si hay listas anidadas, aplánalas
-                flat_categories = []
-                for cat in categories:
-                    if isinstance(cat, list):
-                        flat_categories.extend(str(x) for x in cat)
-                    else:
-                        flat_categories.append(str(cat))
-                self._categories = flat_categories
+                flat = [str(x) for cat in categories for x in (cat if isinstance(cat, list) else [cat])]
+                self._categories = "|".join(flat)
             else:
-                self._categories = [str(categories)]
+                self._categories = str(categories)
             self._brand = brand
             self._price = price
             self._description = description

@@ -382,8 +382,8 @@ class DatasetVideoGames(Dataset):
 
                 video_games.add(item_id)
                 i += 1
-                #if i==10000:  #Treure els comentaris si va molt lent
-                #    break
+                if i==10000:  #Comentar si es vol complet peró sinó és molt lent
+                    break
 
         return video_games
     

@@ -248,9 +248,6 @@ class BasatEnContinguts(Recomenador):
             print("No es pot utilitzar l'algoritme basat en continguts amb el dataset Books ja que els items manquen els generes o categories.")
             return False
         
-        print("Ejemplo de g:", item_features[0])
-        print("Tipo de g:", type(item_features[0]))
-
         # 1.1 Filtrar ítems que tinguin gèneres vàlids
         idx_valids = [i for i, g in enumerate(item_features) if g.strip().lower() != "(no genres listed)"]
         if not idx_valids:
@@ -297,52 +294,3 @@ class BasatEnContinguts(Recomenador):
             llista_prediccions.append((self._dataset.get_item_id(idx), score))
 
         return True
-    
-        """
-        #1
-        try:
-            item_features = self._dataset.get_genres()
-        except:
-            return False
-        
-        tfidf = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = tfidf.fit_transform(item_features).toarray()
-
-        # Mascara: True si l'ítem ha estat valorat
-        mask_valorats = user_row != -1
-
-        # Filtra la tfidf_matrix i user_row per als ítems valorats
-        user_row_filtrat = user_row[mask_valorats]
-        tfidf_filtrat = tfidf_matrix[mask_valorats]
-
-        #2
-        denominator = np.sum(np.abs(user_row))
-        if denominator == 0:
-            raise ValueError("L'usuari no ha valorat a ningú")
-        perfil = np.sum(np.reshape(user_row, (-1, 1)) * tfidf_matrix, axis=0) / denominator
-        
-        
-        #3
-        numerador = np.dot(tfidf_matrix, perfil.T)
-        normes_items = np.linalg.norm(tfidf_matrix, axis=1)
-        norma_perfil = np.linalg.norm(perfil)
-        if norma_perfil == 0 or np.any(normes_items == 0):
-            raise ValueError("L'usuari no ha valorat a ningú o hi ha un problema amb els gèneres dels items.")
-        S = numerador / (normes_items * norma_perfil)
-        
-        #4
-        pfinal = S * self._dataset.get_pmax() #podriamos poner un atributo, si pero como solo es para esto igual esta bien asi
-
-        mask = user_row == -1
-        posicions_no_valorades = np.where(mask)[0]  # índexs reals al dataset
-
-        for idx in posicions_no_valorades:
-            score = pfinal[idx] #ERROR
-            llista_prediccions.append( (self._dataset.get_item_id(idx), score))
-
-        return True
-        """
-    
-    
-    
-    
