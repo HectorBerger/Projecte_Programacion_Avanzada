@@ -4,20 +4,15 @@ from typing import List
 
 class Item(ABC):
     _id: str
-    _pos_col: int
     _title: str
 
     @abstractmethod
-    def __init__(self,item_id,titol):# -> bool:
+    def __init__(self,item_id:str, titol:str):
         try:
             self._id = str(item_id)
-            self._pos_col = int()
             self._title = str(titol)
         except:
             raise ValueError
-
-    def set_columna(self,col):# -> bool: #No se usa
-        self._pos_col = int(col)
 
     def get_id(self):
         return self._id
@@ -35,7 +30,7 @@ class Movie(Item):
     _any_movie: str
     _genres: List[str]
     
-    def __init__(self,movie_id,titol,any_mov,generes):# -> bool:
+    def __init__(self,movie_id:str,titol:str,any_mov:str,generes:list):
         try:
             self._any_movie= any_mov
             self._genres = generes
@@ -55,7 +50,7 @@ class Book(Item):
     _any_publicacio: int
     _publisher: str
 
-    def __init__(self,isbn,titol,author,any_pub,publisher): # -> bool:
+    def __init__(self,isbn:str, titol:str, author:str, any_pub:int, publisher:str):
         try:
             self._author = str(author)
             self._any_publicacio = int(any_pub)
@@ -69,3 +64,26 @@ class Book(Item):
     
     def get_genres(self):
         raise NotImplemented
+
+class VideoGame(Item):
+    #asin = _id
+    _categories: list
+    _brand: str
+    _price: str
+    _description: str
+
+    def __init__(self, asin:str, titol:str, categories:list, price:str, brand:str="Unknown", description:str="..."):
+        try:
+            self._categories = categories
+            self._brand = brand
+            self._price = price
+            self._description = description
+            super().__init__(asin,titol)
+        except:
+            raise ValueError(f"Error al inicialitzar les dades del objecte VideoGame {asin}")
+
+    def __str__(self):
+        return f"{self._title}, Preu: {self._price}. Categories: {self._categories} [ID: {self._id}] Descripció: {self._description}"
+
+    def get_genres(self):
+        return self._categories 

@@ -24,7 +24,7 @@ def mostrar_categorias(carpeta, num_lineas=5):
         print(f"\nArchivo: {archivo}")
         ruta = os.path.join(carpeta, archivo)
         for i, obj in enumerate(parse(ruta)):
-            #print("Objeto:", obj)
+            print("Objeto:", obj)
             categorias = obj.get('categories') or obj.get('category') or obj.get('genres')
             print("Categorías/Generos:", categorias)
             if i + 1 >= num_lineas:
@@ -51,7 +51,7 @@ def categorias_unicas(path):
 
 if __name__ == "__main__":
     mostrar_categorias('dataset/Amazon',20)
-    categorias_unicas('dataset/Amazon/meta_Video_Games.json.gz')
+    #categorias_unicas('dataset/Amazon/meta_Video_Games.json.gz')
     # Ejemplo de uso:
     # mostrar_categorias('Digital_musica_5')
     

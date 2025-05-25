@@ -1,5 +1,5 @@
 from typing import Dict
-from items import Item, Book, Movie
+from items import Item, Book, Movie, VideoGame
 from abc import ABC, abstractmethod 
 from user import User
 import csv, json
@@ -14,8 +14,8 @@ NOM_FITXER_BOOKS = "dataset\\Books\\Books.csv"
 NOM_FITXER_BOOKS_USERS = "dataset\\Books\\Users.csv"
 NOM_FITXER_RATING_BOOKS = "dataset\\Books\\Ratings.csv" 
 
-NOM_FITXER_VIDEOGAMES_METADATA = "dataset\\Amazon\\meta_Video_Games.json.gz"
-NOM_FITXER_RATINGS_VIDEOGAMES = "dataset\\Amazon\\Video_Games_5.json.gz"
+NOM_FITXER_VIDEOGAMES_METADATA = "dataset\\VideoGames\\meta_Video_Games.json.gz"
+NOM_FITXER_RATINGS_VIDEOGAMES = "dataset\\VideoGames\\Video_Games_5.json.gz"
 
 
 
@@ -151,7 +151,7 @@ class DatasetMovies(Dataset):
                 else:
                     print(f"User or movie not found: userId={user_id}, movieId={movie_id}") #DEBUG
         
-        self.set_pmax(np.max(ratings))
+        self.set_pmax(np.max(ratings)) # = 5
 
         return ratings
                 
@@ -273,6 +273,7 @@ class DatasetBooks(Dataset):
         
         return books
 
+
 import gzip
 from scipy.sparse import lil_matrix
 def parse(path):
@@ -280,11 +281,10 @@ def parse(path):
         for l in g:
             yield json.loads(l)
 
-class DatasetMusic(Dataset):
+class DatasetVideoGames(Dataset):
     def __init__(self):
         if super().__init__():
             print("LOADED") #LOG
-
     def carrega_ratings(self):
         #Recorrer para saber n i m 
         #Carregar els primer 10.000 videogames i els 10.000 usuaris més adhients 
@@ -294,40 +294,84 @@ class DatasetMusic(Dataset):
         #Crear array y llenarla
         number_of_users = len(self._all_users) #n files
         number_of_items = len(self._all_items) #m columnes
-        ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
-        for i, obj in enumerate(self.parse(NOM_FITXER_RATING_BOOKS)):
+        ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.float16) )
+        for review in parse(NOM_FITXER_RATINGS_VIDEOGAMES): 
+            user_id = review.get('reviewerID')
+            asin = review.get('asin')
 
-            """
-        with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
-            dict_reader = csv.DictReader(csvfile, delimiter=',')
-            for row in dict_reader:
-                user_id = row["User-ID"]
-                isbn = row["ISBN"]
+            if user_id in self._pos_users.keys() and asin in self._pos_items.keys(): #Hi haurà molts que no hi estàn
+                    score = review.get('overall')
+                    try:
+                        score_float = float(score)
+                        ratings[self._pos_users[user_id], self._pos_items[asin]] = np.float16(score_float)
+                    except (TypeError, ValueError):
+                        # Si score es None, '', o no convertible, lo ignoras
+                        continue
+        valid_ratings = ratings[ratings != -1]
+        if len(valid_ratings) > 0:
+            self.set_pmax(np.max(valid_ratings))
+        else:
+            self.set_pmax(0)
 
-                if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
-                    ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
-            """
         return ratings
+        
             
     
     def carrega_users(self) -> set:
-        users = set()
-        for i, obj in enumerate(self.parse(NOM_FITXER_RATING_BOOKS)):
-            """
-        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_VIDEOGAMES):
-            user_id = data.get("reviewerID")
-            if user_id:
-                users.add(user_id)
-            """
+        temp_users = dict()
+        for obj in parse(NOM_FITXER_RATINGS_VIDEOGAMES):
+            item_id = obj.get('asin')
+            if item_id in self._all_items:
+                user_id = obj.get('reviewerID')
+                if user_id in temp_users: 
+                    temp_users[user_id] += 1
+                else:
+                    temp_users[user_id] = 1
+        
+        users = set([user_id for user_id, num_relevancia in sorted(temp_users.items(), key=lambda x: x[1], reverse=True)[:10000]])
+
+        pos = 0
+        for obj in parse(NOM_FITXER_RATINGS_VIDEOGAMES):
+            user_id = obj.get('reviewerID')
+            if user_id in users and not user_id in self._pos_users.keys():
+                user_name = obj.get('reviewerName')
+                self._users[pos] = User(user_id,name=user_name)
+                self._pos_users[user_id] = pos
+                pos += 1
+
+        if len(users) != len(self._users):
+            raise ImportError
         return users
+       
 
     def carrega_items(self) -> set:
         video_games = set()
-        for i, obj in enumerate(self.parse(NOM_FITXER_VIDEOGAMES_METADATA)):
-            video_games.add()
+        i=0
+        for obj in parse(NOM_FITXER_VIDEOGAMES_METADATA):
+            categories = obj.get('categories') or obj.get('category') or obj.get('genres')
+            if categories:
+                try:
+                    item_id = obj.get('asin')
+                    titol = obj.get('title')
+                    brand = obj.get('brand')
+                    price = obj.get('price')
+                    description = obj.get('description')
+                    if not item_id or not titol or not price:
+                        raise ValueError(f"Missing required field(s) for VideoGame {item_id}")
+                    self._items[i] = VideoGame(item_id, titol, categories, price, brand, description)
+                except Exception:
+                    continue
+
+                video_games.add(item_id)
+                i += 1
+                #if i==10000:
+                #    break
 
         return video_games
     
     def get_genres(self):
-        raise NotImplemented
+        llista_generes = []
+        for item in self._items.values(): 
+            llista_generes.append(item.get_genres())
+        return llista_generes
 

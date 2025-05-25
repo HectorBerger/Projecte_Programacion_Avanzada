@@ -1,11 +1,11 @@
 #Projecte
 import argparse, os.path, pickle, logging
 from recomenador_vFinal import Simple, Colaboratiu, BasatEnContinguts 
-from dataset import DatasetMovies, DatasetBooks
+from dataset import DatasetMovies, DatasetBooks, DatasetVideoGames
 
 def main():
     parser = argparse.ArgumentParser(description="Aplicar un algorisme de recomanació a un dataset per diferents usuaris a escollir.") #Hemos usado argparse para poder mostrar el help más fácilmente
-    parser.add_argument("dataset", choices=["MovieLens100k", "Books", "Amazon"], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'Amazon' per a recomanacions de productes Amazon.") #!#! default? 
+    parser.add_argument("dataset", choices=["MovieLens100k", "Books", "VideoGames"], help="Especifiqueu el conjunt de dades a utilitzar: 'MovieLens100k' per a pel·lícules, 'Books' per a recomanacions de llibres, o 'VideoGames' per a recomanacions de Videojocs que són productes a Amazon.") 
     parser.add_argument("method", choices=["Simple", "Col·laboratiu", "Contingut"], help="Especifiqueu el algoritme de recomanació a utilitzar: 'Simple', 'Col·laboratiu' o 'BasatEnContingut'.")
  
     args = parser.parse_args()
@@ -19,8 +19,8 @@ def main():
                 d = DatasetMovies()
             case "Books":
                 d = DatasetBooks()
-            case "Amazon":
-                d = DatasetBooks() 
+            case "VideoGames":
+                d = DatasetVideoGames() 
 
         match method:
             case "Simple":
