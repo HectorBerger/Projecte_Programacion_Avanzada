@@ -10,6 +10,8 @@ import time
 
 import gzip, json
 import os
+import functools
+
 
 def parse(path):
     with gzip.open(path, 'rt', encoding='utf-8') as g:
@@ -27,12 +29,33 @@ def mostrar_categorias(carpeta, num_lineas=5):
             print("Categorías/Generos:", categorias)
             if i + 1 >= num_lineas:
                 break
+def categorias_unicas(path):
+    categorias_set = set()
+    with gzip.open(path, 'rt', encoding='utf-8') as g:
+        for l in g:
+            obj = json.loads(l)
+            categorias = obj.get('categories') or obj.get('category') or obj.get('genres')
+            if categorias:
+                # Si es una lista de listas (como en Amazon), aplanar
+                if isinstance(categorias, list):
+                    for cat in categorias:
+                        if isinstance(cat, list):
+                            categorias_set.update(cat)
+                        else:
+                            categorias_set.add(cat)
+                else:
+                    categorias_set.add(categorias)
+    print("Categorías únicas encontradas:")
+    for cat in sorted(categorias_set):
+        print(cat)
 
 if __name__ == "__main__":
-    mostrar_categorias('dataset/Digital_Music_5',20)
+    mostrar_categorias('dataset/Amazon',20)
+    categorias_unicas('dataset/Amazon/meta_Video_Games.json.gz')
     # Ejemplo de uso:
     # mostrar_categorias('Digital_musica_5')
     
+
 def executar_amb_barra(func, *args, **kwargs):
     resultat = [None]
 
@@ -50,6 +73,13 @@ def executar_amb_barra(func, *args, **kwargs):
     fil.join()
     return resultat[0]
 
+import time
+
+def timer(func):
+    start = time.time()
+    result = func()
+    print(f"Tiempo: {time.time() - start:.2f}s")
+    return result
 
 def func(a, b):
     """

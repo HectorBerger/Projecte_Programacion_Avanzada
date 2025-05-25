@@ -1,8 +1,5 @@
 #Projecte
-import pickle
-import argparse
-import os.path
-import logging
+import argparse, os.path, pickle, logging
 from recomenador_vFinal import Simple, Colaboratiu, BasatEnContinguts 
 from dataset import DatasetMovies, DatasetBooks
 
@@ -23,7 +20,7 @@ def main():
             case "Books":
                 d = DatasetBooks()
             case "Amazon":
-                d = DatasetBooks() #DatasetAmazon()
+                d = DatasetBooks() 
 
         match method:
             case "Simple":
@@ -58,6 +55,7 @@ def main():
                     
             case "A":
                 print(r.test(user_id))
+                r.imprimir_prediccions(user_id)
             case "S":
                 print("Sortint...\n")
                 # Per guardar en un fitxer binari una còpia exacta de l’objecte

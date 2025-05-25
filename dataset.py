@@ -2,21 +2,20 @@ from typing import Dict
 from items import Item, Book, Movie
 from abc import ABC, abstractmethod 
 from user import User
-import csv
+import csv, json
 import numpy as np
-import json
-
+from toolkit import timer
 
 #Provisional hasta decidir que hacer: #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
 NOM_FITXER_MOVIES = "dataset\\MovieLens100k\\movies.csv"
 NOM_FITXER_RATINGS_MOVIES = "dataset\\MovieLens100k\\ratings.csv"
 
-NOM_FITXER_BOOKS = "dataset/Books/Books.csv"
-NOM_FITXER_BOOKS_USERS = "dataset/Books/Users.csv"
-NOM_FITXER_RATING_BOOKS = "dataset/Books/Ratings.csv" 
+NOM_FITXER_BOOKS = "dataset\\Books\\Books.csv"
+NOM_FITXER_BOOKS_USERS = "dataset\\Books\\Users.csv"
+NOM_FITXER_RATING_BOOKS = "dataset\\Books\\Ratings.csv" 
 
-NOM_FITXER_ = ""
-NOM_FITXER_RATINGS_ = "dataset\\Amazon\\Digital_Music_5.json"
+NOM_FITXER_VIDEOGAMES_METADATA = "dataset\\Amazon\\meta_Video_Games.json.gz"
+NOM_FITXER_RATINGS_VIDEOGAMES = "dataset\\Amazon\\Video_Games_5.json.gz"
 
 
 
@@ -30,35 +29,60 @@ class Dataset(ABC):
     _all_users: set
     _all_items: set
 
-    def __init__(self):
+    def __init__(self) -> bool:
         self._users = dict()
         self._items = dict()
         self._pos_users = dict() #Cambiar "pos" por "row" i "column" (o "fila" i "columna")
         self._pos_items = dict()
         self._all_users = set()
         self._all_items = set()
-        self._pmax = int()
-        self._ratings = self.carrega_ratings("") 
-        print("LOADED") #log
+        self._pmax = None
+
+        try:
+            self._ratings = self.carrega_ratings() 
+        except Exception as e:
+            raise RuntimeError(f"Error carregant ratings: {e}")
+
+        try:
+            for i in range(len(self._all_items)):
+                item_id = self.get_item_id(i)
+                i_retrobat = self.get_col_item(item_id)
+                assert i == i_retrobat, f"Error: idx={i}, idx_retrobat={i_retrobat}"
+        except Exception as e:
+            raise RuntimeError(f"Error assignant posicions als items: {e}")
+
+        try:
+            for i in range(len(self._all_users)):
+                user_id = self.get_user_id(i)
+                i_retrobat = self.get_row_user(user_id)
+                assert i == i_retrobat, f"Error: idx={i}, idx_retrobat={i_retrobat}"
+        except Exception as e:
+            raise RuntimeError(f"Error assignant posicions als usuaris: {e}")
+        
         return True
 
     @abstractmethod
-    def carrega_ratings(self,nom_fitxer):
+    def carrega_ratings(self):
         raise NotImplementedError
                 
     @abstractmethod
-    def carrega_users(self,nom_fitxer):
+    def carrega_users(self):
         raise NotImplementedError   
 
     @abstractmethod
-    def carrega_items(self,nom_fitxer):
+    def carrega_items(self):
         raise NotImplementedError   
 
     def set_pmax(self, puntuacio_maxima):
-        self._pmax = abs(int(puntuacio_maxima))
+        try:
+            self._pmax = abs(int(puntuacio_maxima))
+        except:
+            raise ValueError
 
     def get_pmax(self):
-        return self._pmax
+        if self._pmax is not None:
+            return self._pmax
+        raise AttributeError
 
     def get_ratings(self):
         return self._ratings
@@ -66,14 +90,19 @@ class Dataset(ABC):
     def get_users(self):
         return self._all_users   
     
-    def get_row_user(self, id_user:str): #O "pos"?
+    def get_row_user(self, id_user:str): 
         if id_user in self._pos_users.keys():
             return self._pos_users[id_user]
         raise ValueError
 
-    def get_user_obj(self, id_user):
+    def get_user_obj(self, id_user:str):
         fila = self.get_row_user(id_user)
         return self._users[fila]
+    
+    def get_user_id(self, pos_user:int):
+        if pos_user in self._users.keys():
+            return self._users[pos_user].get_id()
+        raise KeyError
     
     def get_items(self):
         return self._all_items
@@ -83,11 +112,11 @@ class Dataset(ABC):
             return self._pos_items[id_item]
         raise KeyError
     
-    def get_item_obj(self, item_id: str):
+    def get_item_obj(self, item_id:str):
         col = self.get_col_item(item_id)
         return self._items[col]
     
-    def get_item_id(self, pos_item):
+    def get_item_id(self, pos_item:int):
         if pos_item in self._items.keys():
             return self._items[pos_item].get_id()
         raise KeyError
@@ -98,13 +127,14 @@ class Dataset(ABC):
 
 class DatasetMovies(Dataset):
     def __init__(self):
-        super().__init__()
+        if super().__init__():
+            print("LOADED") #LOG
 
-    def carrega_ratings(self,nom_fitxer):
+    def carrega_ratings(self) -> np.ndarray:
         #Recorrer para saber n i m (el shape de la array)
         #Carregar usuaris i movies
-        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente?
-        self._all_users = self.carrega_users("nom_fitxer") 
+        self._all_items = self.carrega_items() 
+        self._all_users = self.carrega_users()
 
         #Crear array y llenarla
         number_of_users = len(self._all_users) #n files
@@ -126,7 +156,7 @@ class DatasetMovies(Dataset):
         return ratings
                 
 
-    def carrega_users(self,nom_fitxer) -> set:
+    def carrega_users(self) -> set:
         users = set()
 
         with open(NOM_FITXER_RATINGS_MOVIES, 'r', encoding="utf-8") as csvfile:   
@@ -135,12 +165,12 @@ class DatasetMovies(Dataset):
                 users.add(row["userId"])
 
         for i,iduser in enumerate(users):
-            self._users[i] = User(iduser) # O només iduser? ja que no ens interessa tota la resta
+            self._users[i] = User(iduser) 
             self._pos_users[iduser] = i
 
         return users
     
-    def carrega_items(self,nom_fitxer) -> set:
+    def carrega_items(self) -> set:
         movies = set()
 
         with open(NOM_FITXER_MOVIES, 'r', encoding="utf-8") as csvfile:   
@@ -163,23 +193,25 @@ class DatasetMovies(Dataset):
             llista_generes.append(item.get_genres())
         return llista_generes
 
-
+import time
 class DatasetBooks(Dataset):
     def __init__(self):
-        super().__init__()
+        if super().__init__():
+            print("LOADED") #LOG
 
-    def carrega_ratings(self,nom_fitxer):
+    def carrega_ratings(self) -> np.ndarray:
         #!#! Arreglar carrega intentar reducir la apertura de archivos y fijarse que los users creados y libros son los que se usan
 
         #Recorrer para saber n i m 
-        #Carregar els primer 10,000 books i els usuaris més adhients 
-        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
-        self._all_users = self.carrega_users("nom_fitxer")
+        #Carregar els primer 10.000 books i els 10.000 usuaris més adhients 
+        self._all_items = timer(lambda: self.carrega_items()) 
+        self._all_users = timer(lambda: self.carrega_users())
 
         #Crear array y llenarla
         number_of_users = len(self._all_users) #n files
         number_of_items = len(self._all_items) #m columnes
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
+        start = time.time()
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
@@ -188,17 +220,17 @@ class DatasetBooks(Dataset):
 
                 if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
                     ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
-
+        print(f"Tiempo: {time.time() - start:.2f}s")
         return ratings
 
 
-    def carrega_users(self,nom_fitxer) -> set:
+    def carrega_users(self) -> set:
         temp_users = dict()
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:   
             bookreader = csv.DictReader(csvfile, delimiter=',')
             for row in bookreader:
                 if row["ISBN"] in self._all_items:
-                    if row["User-ID"] in temp_users: # and int(row["Book-Rating"]) > 0:
+                    if row["User-ID"] in temp_users: # and int(row["Book-Rating"]) > 0: 
                         temp_users[row["User-ID"]] += 1
                     else:
                         temp_users[row["User-ID"]] = 1
@@ -220,7 +252,7 @@ class DatasetBooks(Dataset):
         return users
     
 
-    def carrega_items(self,nom_fitxer) -> set:
+    def carrega_items(self) -> set:
         books = set()
 
         with open(NOM_FITXER_BOOKS, 'r', encoding="utf-8") as csvfile:   
@@ -242,21 +274,22 @@ class DatasetBooks(Dataset):
         return books
 
 import gzip
-
-class DatasetMusic(Dataset):
-    def __init__(self):
-        super().__init__()
-
-    def parse(path):
+from scipy.sparse import lil_matrix
+def parse(path):
         g = gzip.open(path, 'r')
         for l in g:
             yield json.loads(l)
 
-    def carrega_ratings(self,nom_fitxer):
+class DatasetMusic(Dataset):
+    def __init__(self):
+        if super().__init__():
+            print("LOADED") #LOG
+
+    def carrega_ratings(self):
         #Recorrer para saber n i m 
-        #Carregar els primer 10,000 books i els usuaris més adhients 
-        self._all_items = self.carrega_items("nom_fitxer") #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
-        self._all_users = self.carrega_users("nom_fitxer")
+        #Carregar els primer 10.000 videogames i els 10.000 usuaris més adhients 
+        self._all_items = self.carrega_items() #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 
+        self._all_users = self.carrega_users()
 
         #Crear array y llenarla
         number_of_users = len(self._all_users) #n files
@@ -277,25 +310,23 @@ class DatasetMusic(Dataset):
         return ratings
             
     
-    def carrega_users(self,nom_fitxer) -> set:
+    def carrega_users(self) -> set:
         users = set()
-
-        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_MUSIC):
+        for i, obj in enumerate(self.parse(NOM_FITXER_RATING_BOOKS)):
+            """
+        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_VIDEOGAMES):
             user_id = data.get("reviewerID")
             if user_id:
                 users.add(user_id)
-
+            """
         return users
 
-    def carrega_items(self,nom_fitxer) -> set:
-        music = set()
+    def carrega_items(self) -> set:
+        video_games = set()
+        for i, obj in enumerate(self.parse(NOM_FITXER_VIDEOGAMES_METADATA)):
+            video_games.add()
 
-        for data in DatasetMusic.parse(NOM_FITXER_RATINGS_MUSIC):
-            item_id = data.get("")
-            if item_id:
-                music.add(item_id)
-
-        return music
+        return video_games
     
     def get_genres(self):
         raise NotImplemented
