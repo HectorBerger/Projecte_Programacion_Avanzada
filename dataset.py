@@ -2,10 +2,11 @@ from typing import Dict
 from items import Item, Book, Movie, VideoGame
 from abc import ABC, abstractmethod 
 from user import User
-import csv, json, gzip, re, os
+import csv, os
 import numpy as np
-from toolkit import timer
+from toolkit import timer, parse, clean_price
 
+#Constants amb els paths pels arxius d'on estreurem la informació
 NOM_FITXER_MOVIES = "dataset\\MovieLens100k\\movies.csv"
 NOM_FITXER_RATINGS_MOVIES = "dataset\\MovieLens100k\\ratings.csv"
 
@@ -197,7 +198,6 @@ class DatasetMovies(Dataset):
             llista_generes.append(item.get_genres())
         return llista_generes
 
-import time
 class DatasetBooks(Dataset):
     def __init__(self):
         if super().__init__():
@@ -214,14 +214,13 @@ class DatasetBooks(Dataset):
         
         #Recorrer para saber n i m 
         #Carregar els primer 10.000 books i els 10.000 usuaris més adhients 
-        self._all_items = timer(lambda: self.carrega_items()) 
-        self._all_users = timer(lambda: self.carrega_users())
+        self._all_items = lambda: self.carrega_items()
+        self._all_users = lambda: self.carrega_users()
 
         #Crear array y llenarla
         number_of_users = len(self._all_users) #n files
         number_of_items = len(self._all_items) #m columnes
         ratings = np.negative( np.ones([number_of_users,number_of_items], dtype=np.int8) )
-        start = time.time()
         with open(NOM_FITXER_RATING_BOOKS, 'r', encoding="utf-8") as csvfile:
             dict_reader = csv.DictReader(csvfile, delimiter=',')
             for row in dict_reader:
@@ -230,7 +229,6 @@ class DatasetBooks(Dataset):
 
                 if user_id in self._pos_users.keys() and isbn in self._pos_items.keys(): #Hi haurà molts que no hi estàn
                     ratings[self._pos_users[user_id], self._pos_items[isbn]] = np.int8(row["Book-Rating"]) 
-        print(f"Tiempo: {time.time() - start:.2f}s")
         return ratings
 
 
@@ -284,26 +282,6 @@ class DatasetBooks(Dataset):
         return books
 
 
-def parse(path):
-        g = gzip.open(path, 'r')
-        for l in g:
-            yield json.loads(l)
-
-def clean_price(price):
-    if not price or isinstance(price, list):
-        return None
-    # Si es un string con símbolos de dólar, quítalos y quédate con el número
-    if isinstance(price, str):
-        # Busca el primer número en el string
-        match = re.search(r'(\d+(\.\d+)?)', price.replace(',', ''))
-        if match:
-            return float(match.group(1))
-        else:
-            return None
-    try:
-        return float(price)
-    except Exception:
-        return None
 
 class DatasetVideoGames(Dataset):
     def __init__(self):

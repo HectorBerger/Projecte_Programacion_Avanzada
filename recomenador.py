@@ -77,7 +77,7 @@ class Recomenador(ABC):
                 print(f" {i+1}: {item} amb predicted score {tupla[1]:.3f}")
             return True
     
-    def test(self, user_id):
+    def test(self, user_id:str):# -> str/Objeto Avaluador
         
         if not user_id in self._avaluacions:
             if self.recomenar(user_id):
@@ -247,6 +247,9 @@ class BasatEnContinguts(Recomenador):
         except:
             print("No es pot utilitzar l'algoritme basat en continguts amb el dataset Books ja que els items manquen els generes o categories.")
             return False
+        
+        print("Ejemplo de g:", item_features[0])
+        print("Tipo de g:", type(item_features[0]))
 
         # 1.1 Filtrar ítems que tinguin gèneres vàlids
         idx_valids = [i for i, g in enumerate(item_features) if g.strip().lower() != "(no genres listed)"]

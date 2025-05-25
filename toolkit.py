@@ -1,23 +1,34 @@
-import logging
-
-
-#logging.basicConfig(filename='log.txt',level=logging.INFO,
-#format='%(asctime)s | %(name)s | %(levelname)s | %(message)s')
-
 from tqdm import tqdm
 import threading
 import time
-
-import gzip, json
-import os
-import functools
+import gzip, json, os, re
 
 
 def parse(path):
-    with gzip.open(path, 'rt', encoding='utf-8') as g:
-        for l in g:
-            yield json.loads(l)
+    g = gzip.open(path, 'r')
+    for l in g:
+        yield json.loads(l)
 
+def clean_price(price):
+    if not price or isinstance(price, list):
+        return None
+    # Si es un string con símbolos de dólar, quítalos y quédate con el número
+    if isinstance(price, str):
+        # Busca el primer número en el string
+        match = re.search(r'(\d+(\.\d+)?)', price.replace(',', ''))
+        if match:
+            return float(match.group(1))
+        else:
+            return None
+    try:
+        return float(price)
+    except Exception:
+        return None
+
+
+
+
+#A partir de aquí estás funciones se han utilizado para medir y visualizar previamente los datasets
 def mostrar_categorias(carpeta, num_lineas=5):
     archivos = [f for f in os.listdir(carpeta) if f.endswith('.gz')]
     for archivo in archivos:
@@ -29,6 +40,7 @@ def mostrar_categorias(carpeta, num_lineas=5):
             print("Categorías/Generos:", categorias)
             if i + 1 >= num_lineas:
                 break
+
 def categorias_unicas(path):
     categorias_set = set()
     with gzip.open(path, 'rt', encoding='utf-8') as g:
@@ -72,8 +84,6 @@ def executar_amb_barra(func, *args, **kwargs):
 
     fil.join()
     return resultat[0]
-
-import time
 
 def timer(func):
     start = time.time()
