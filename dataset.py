@@ -678,7 +678,7 @@ class DatasetVideoGames(Dataset):
             logging.critical(f"Error crític: no s'ha carregat correctament el dataset VideoGames, no es pot continuar")
 
 
-    def carrega_ratings(self):
+    def carrega_ratings(self) -> np.ndarray:
         """
         Carrega les valoracions dels usuaris als videojocs.
 
