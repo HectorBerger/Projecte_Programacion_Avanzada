@@ -2,7 +2,7 @@ from typing import Dict
 from items import Item, Book, Movie, VideoGame
 from abc import ABC, abstractmethod 
 from user import User
-import csv, json
+import csv, json, gzip, re, os
 import numpy as np
 from toolkit import timer
 
@@ -129,6 +129,12 @@ class DatasetMovies(Dataset):
             print("LOADED") #LOG
 
     def carrega_ratings(self) -> np.ndarray:
+        # Comprovar que els arxius existeixen abans de continuar
+        if not os.path.exists(NOM_FITXER_MOVIES):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_MOVIES}")
+        if not os.path.exists(NOM_FITXER_RATINGS_MOVIES):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_RATINGS_MOVIES}")
+        
         #Recorrer para saber n i m (el shape de la array)
         #Carregar usuaris i movies
         self._all_items = self.carrega_items() 
@@ -198,8 +204,14 @@ class DatasetBooks(Dataset):
             print("LOADED") #LOG
 
     def carrega_ratings(self) -> np.ndarray:
-        #!#! Arreglar carrega intentar reducir la apertura de archivos y fijarse que los users creados y libros son los que se usan
-
+        # Comprovar que els arxius existeixen abans de continuar
+        if not os.path.exists(NOM_FITXER_BOOKS):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_BOOKS}")
+        if not os.path.exists(NOM_FITXER_RATING_BOOKS):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_RATING_BOOKS}")
+        if not os.path.exists(NOM_FITXER_BOOKS_USERS):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_BOOKS_USERS}")
+        
         #Recorrer para saber n i m 
         #Carregar els primer 10.000 books i els 10.000 usuaris més adhients 
         self._all_items = timer(lambda: self.carrega_items()) 
@@ -272,8 +284,6 @@ class DatasetBooks(Dataset):
         return books
 
 
-import gzip,re
-from scipy.sparse import lil_matrix
 def parse(path):
         g = gzip.open(path, 'r')
         for l in g:
@@ -299,7 +309,14 @@ class DatasetVideoGames(Dataset):
     def __init__(self):
         if super().__init__():
             print("LOADED") #LOG
+
     def carrega_ratings(self):
+        # Comprovar que els arxius existeixen abans de continuar
+        if not os.path.exists(NOM_FITXER_VIDEOGAMES_METADATA):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_VIDEOGAMES_METADATA}")
+        if not os.path.exists(NOM_FITXER_RATINGS_VIDEOGAMES):
+            raise FileNotFoundError(f"No es troba l'arxiu: {NOM_FITXER_RATINGS_VIDEOGAMES}")
+        
         #Recorrer para saber n i m 
         #Carregar els primer 10.000 videogames i els 10.000 usuaris més adhients 
         self._all_items = self.carrega_items() #Cómo damos las direcciones de los archivos? argumento/atributo/constante/o directamente? 

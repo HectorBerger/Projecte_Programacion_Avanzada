@@ -1,6 +1,8 @@
-#Projecte
+# Projecte Programació Avançada 
+# Repositori públic: https://github.com/HectorBerger/Projecte_Programacion_Avanzada
+
 import argparse, os.path, pickle, logging
-from recomenador_vFinal import Simple, Colaboratiu, BasatEnContinguts 
+from recomenador import Simple, Colaboratiu, BasatEnContinguts 
 from dataset import DatasetMovies, DatasetBooks, DatasetVideoGames
 
 def main():
