@@ -2,7 +2,7 @@ from dataset import Dataset
 from avaluador import Avaluador
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
-import math, random, l
+import math, random, logging
 from abc import ABC, abstractmethod
 
 
